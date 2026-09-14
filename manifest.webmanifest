@@ -1,0 +1,18 @@
+{
+  "name": "Juliane Boone Nail Designer",
+  "short_name": "Agenda Juliane",
+  "description": "Agenda PWA do Studio Juliane Boone Nail Designer",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#FAF6F0",
+  "icons": [
+    {
+      "src": "./assets/logo-juliane-boone.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
