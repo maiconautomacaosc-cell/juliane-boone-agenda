@@ -41,3 +41,9 @@ Como o projeto é estático e sem build, ele funciona diretamente no GitHub Page
 
 ## v0.1.4
 Fluxo operacional de reservas/confirmacao, mensagens WhatsApp, painel de status e amanha, compromissos particulares, conclusao com procedimentos realizados, reposicao por unidade, cuidados pos-atendimento e financeiro semanal detalhado.
+
+## v0.1.6
+- Corrige o modal de “Novo registro” permanecendo sobre a seleção de data.
+- Agenda abre em visão semanal proporcional (08h–00h), com Semana/Mês.
+- Dia ampliado centralizado com fundo ofuscado e swipe SEG–DOM, travado dentro da semana.
+- Blocos de atendimento/particular ocupam proporcionalmente a duração real e abrem os detalhes.
