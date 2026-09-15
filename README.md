@@ -37,3 +37,7 @@ Como o projeto é estático e sem build, ele funciona diretamente no GitHub Page
 2. Validar Painel, Agenda mensal e fluxo de novo agendamento.
 3. Ajustar identidade visual e navegação.
 4. Depois conectar Google/Firebase e backup remoto.
+
+
+## v0.1.4
+Fluxo operacional de reservas/confirmacao, mensagens WhatsApp, painel de status e amanha, compromissos particulares, conclusao com procedimentos realizados, reposicao por unidade, cuidados pos-atendimento e financeiro semanal detalhado.
