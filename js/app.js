@@ -11,7 +11,8 @@ const state = {
   selectedWeek: startOfWeek(new Date()),
   selectedDateKey: null,
   modal: null,
-  draftAppointment: null
+  draftAppointment: null,
+  calendarSelectionMode: null
 };
 
 const navItems = [
@@ -84,8 +85,10 @@ function dashboard() {
   const receivable = Math.max(0, expected - weekAppointments.reduce((s,a)=>s+paymentTotalForAppointment(a.id),0));
   const verse = BIBLE_MESSAGES[new Date().getDate() % BIBLE_MESSAGES.length];
 
-  return `<main class="content">
-    <section class="hero-card">
+  return `<main class="content dashboard-content">
+    <section class="verse-card dashboard-verse">${escapeHtml(verse)}</section>
+
+    <section class="hero-card dashboard-hero">
       <div><span class="eyebrow">PAINEL</span><h1>Hoje e sua semana</h1><p>Visão rápida do Studio.</p></div>
     </section>
 
@@ -106,7 +109,6 @@ function dashboard() {
       </div>
     </section>
 
-    <section class="verse-card">${escapeHtml(verse)}</section>
   </main>`;
 }
 
@@ -131,10 +133,11 @@ function calendar() {
   for (let day=1;day<=last.getDate();day++) cells.push(new Date(year,month,day));
   while (cells.length % 7) cells.push(null);
   const monthLabel = new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(d);
-  return `<main class="content"><section class="section-card calendar-card">
+  return `<main class="content ${state.calendarSelectionMode?'calendar-selecting':''}"><section class="section-card calendar-card ${state.calendarSelectionMode?'selection-focus':''}">
     <div class="section-head"><div><span class="eyebrow">AGENDA</span><h1 class="capitalize">${monthLabel}</h1></div>
       <div class="week-controls"><button id="prevMonth">‹</button><button id="todayMonth">Hoje</button><button id="nextMonth">›</button></div>
     </div>
+    ${state.calendarSelectionMode?`<div class="calendar-selection-hint">${state.calendarSelectionMode==='maintenance'?'Escolha o dia da próxima manutenção':'Toque no dia desejado'}</div>`:''}
     <div class="legend"><span><i class="dot free"></i>Livre</span><span><i class="dot booked"></i>Atendimento</span><span><i class="dot personal"></i>Particular</span><span><i class="dot mixed"></i>Misto</span></div>
     <div class="calendar-grid dow">${['DOM','SEG','TER','QUA','QUI','SEX','SÁB'].map(x=>`<b>${x}</b>`).join('')}</div>
     <div class="calendar-grid">${cells.map(calCell).join('')}</div>
@@ -149,7 +152,7 @@ function calCell(date) {
   const service = aps.filter(a=>a.type!=='personal');
   const cls = personal.length && service.length ? 'mixed' : personal.length ? 'personal' : service.length ? 'booked' : 'free';
   const today = key===toLocalDateKey(new Date());
-  return `<button class="day-cell ${cls} ${today?'today':''}" data-day="${key}">
+  return `<button class="day-cell ${cls} ${today?'today':''} ${state.calendarSelectionMode?'awaiting-choice':''}" data-day="${key}">
     <span class="day-number">${date.getDate()}</span>
     ${aps.length ? `<span class="count-badge">${aps.length}</span>` : ''}
     <i class="dot ${cls}"></i>
@@ -178,13 +181,35 @@ function clients() {
   </section></main>`;
 }
 
+function publicCatalogUrl() {
+  const u = new URL(window.location.href);
+  u.search = '';
+  u.hash = '';
+  u.searchParams.set('catalogo','1');
+  return u.toString();
+}
+
+function catalogCards(publicMode=false) {
+  return currentData().procedures.filter(p=>p.active).map(p=>`<article class="portfolio-card">
+    <img src="${escapeHtml(p.image||'./assets/logo-juliane-boone.png')}" alt="${escapeHtml(p.name)}" loading="lazy">
+    <div class="portfolio-body"><div class="portfolio-title"><strong>${escapeHtml(p.name)}</strong><b>${brl(p.value)}</b></div><span class="portfolio-time">${formatDuration(p.durationMin)}</span><p>${escapeHtml(p.description||'')}</p>${publicMode?`<button class="primary full catalog-whatsapp" data-catalog-procedure="${p.id}">Quero agendar</button>`:''}</div>
+  </article>`).join('');
+}
+
 function catalog() {
   return `<main class="content"><section class="hero-card"><span class="eyebrow">CATÁLOGO</span><h1>Procedimentos</h1><p>Conheça os procedimentos, valores e cuidados de cada serviço.</p></section>
-  <section class="catalog-showcase">${currentData().procedures.filter(p=>p.active).map(p=>`<article class="portfolio-card">
-    <img src="${escapeHtml(p.image||'./assets/logo-juliane-boone.png')}" alt="${escapeHtml(p.name)}" loading="lazy">
-    <div class="portfolio-body"><div class="portfolio-title"><strong>${escapeHtml(p.name)}</strong><b>${brl(p.value)}</b></div><span class="portfolio-time">${formatDuration(p.durationMin)}</span><p>${escapeHtml(p.description||'')}</p></div>
-  </article>`).join('')}</section>
-  <button class="primary full" id="shareCatalog">Compartilhar catálogo</button></main>`;
+  <section class="catalog-showcase">${catalogCards(false)}</section>
+  <button class="primary full" id="shareCatalog">Compartilhar catálogo online</button></main>`;
+}
+
+function renderPublicCatalog() {
+  document.body.classList.add('public-catalog-page');
+  app.innerHTML=`<main class="public-catalog"><header class="public-catalog-head"><img src="./assets/logo-juliane-boone.png" alt="Juliane Boone Nail Designer"><p>Escolha seu procedimento e fale com a Juliane pelo WhatsApp.</p></header><section class="catalog-showcase">${catalogCards(true)}</section><footer>Juliane Boone • Nail Designer</footer></main>`;
+  document.querySelectorAll('[data-catalog-procedure]').forEach(btn=>btn.onclick=()=>{
+    const p=currentData().procedures.find(x=>x.id===btn.dataset.catalogProcedure);
+    const msg=`Olá! 😊 Vi o catálogo da Juliane Boone e gostaria de agendar ${p?.name||'um procedimento'} – ${brl(p?.value||0)}.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+  });
 }
 
 function admin() {
@@ -200,6 +225,8 @@ function renderModal() {
 }
 
 function render() {
+  if (new URLSearchParams(window.location.search).get('catalogo')==='1') { renderPublicCatalog(); return; }
+  document.body.classList.toggle('calendar-choice-mode',!!state.calendarSelectionMode);
   const body = state.view==='dashboard'?dashboard():state.view==='calendar'?calendar():state.view==='finance'?finance():state.view==='clients'?clients():state.view==='catalog'?catalog():admin();
   app.innerHTML = `${header()}${body}${bottomNav()}${renderModal()}`;
   bind();
@@ -219,7 +246,7 @@ function bind() {
   document.querySelector('#prevMonth')?.addEventListener('click',()=>{state.selectedMonth=new Date(state.selectedMonth.getFullYear(),state.selectedMonth.getMonth()-1,1);render();});
   document.querySelector('#nextMonth')?.addEventListener('click',()=>{state.selectedMonth=new Date(state.selectedMonth.getFullYear(),state.selectedMonth.getMonth()+1,1);render();});
   document.querySelector('#todayMonth')?.addEventListener('click',()=>{const n=new Date();state.selectedMonth=new Date(n.getFullYear(),n.getMonth(),1);render();});
-  document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>openDay(b.dataset.day,false));
+  document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>openDay(b.dataset.day,!!state.calendarSelectionMode));
   document.querySelectorAll('[data-appointment]').forEach(b=>b.onclick=()=>openAppointment(b.dataset.appointment));
   document.querySelectorAll('[data-client]').forEach(b=>b.onclick=()=>openClient(b.dataset.client));
   document.querySelectorAll('[data-procedure]').forEach(b=>b.onclick=()=>editProcedure(b.dataset.procedure));
@@ -236,11 +263,12 @@ function openDay(key, selectable=false) {
   <div class="day-agenda">${aps.length?aps.map(a=>`<div class="day-slot"><b>${fmtTime(a.start)}–${fmtTime(a.end)}</b><span>${escapeHtml(a.procedureNames?.join(', ') || (a.type==='personal'?'Particular':'Atendimento'))}</span></div>`).join(''):'<div class="empty">Nenhum compromisso neste dia.</div>'}</div>
   ${selectable?`<button class="primary full" id="selectThisDay">Selecionar este dia</button>`:''}`;
   render();
-  if (selectable) document.querySelector('#selectThisDay')?.addEventListener('click',()=>{state.selectedDateKey=key;state.modal=null;openNewAppointmentForm();});
+  if (selectable) document.querySelector('#selectThisDay')?.addEventListener('click',()=>{state.selectedDateKey=key;state.modal=null;state.calendarSelectionMode=null;openNewAppointmentForm();});
 }
 
 function startAppointmentFlow() {
   state.draftAppointment = { procedureIds: [], notes:'', totalValue:0 };
+  state.calendarSelectionMode='appointment';
   state.view='calendar';
   render();
   setTimeout(()=>{
@@ -282,8 +310,36 @@ function saveAppointment() {
   const start=new Date(`${state.selectedDateKey}T${startTime}:00`); let end=new Date(`${state.selectedDateKey}T${endTime}:00`); if(end<=start) end.setDate(end.getDate()+1);
   const procedures=procIds.map(id=>currentData().procedures.find(p=>p.id===id));
   const appointment={id:uid('appt'),clientId,type:'service',procedureIds:procIds,procedureNames:procedures.map(p=>p.name),start:start.toISOString(),end:end.toISOString(),totalValue:Number(document.querySelector('#apptValue').value||0),notes:document.querySelector('#apptNotes').value,status:'scheduled',createdAt:new Date().toISOString()};
-  currentData().appointments.push(appointment); store.save('appointment.create',{appointmentId:appointment.id});
-  state.modal=null; state.view='dashboard'; render();
+  openBookingPayment(appointment);
+}
+
+function finalizeAppointment(appointment, initialPayment=0, method='PIX', noDeposit=false) {
+  appointment.noDeposit=!!noDeposit;
+  currentData().appointments.push(appointment);
+  if(initialPayment>0) currentData().payments.push({id:uid('pay'),appointmentId:appointment.id,amount:initialPayment,method,kind:'signal',at:new Date().toISOString()});
+  store.save('appointment.create',{appointmentId:appointment.id,initialPayment,noDeposit});
+  state.modal=null; state.view='dashboard'; state.calendarSelectionMode=null; render();
+}
+
+function openBookingPayment(appointment) {
+  const signal=Math.round(Number(appointment.totalValue||0)*0.30*100)/100;
+  state.modal=`<div class="modal-head"><div><span class="eyebrow">FINALIZAR AGENDAMENTO</span><h2>Sinal / Entrada</h2></div><button data-close-modal>×</button></div>
+  <div class="payment-summary"><span>Valor do atendimento</span><b>${brl(appointment.totalValue)}</b><span>Sugestão de sinal (30%)</span><b>${brl(signal)}</b></div>
+  <label>Valor recebido agora<input id="bookingPayAmount" type="number" step="0.01" min="0" max="${appointment.totalValue}" value="${signal.toFixed(2)}"></label>
+  <label>Forma<select id="bookingPayMethod"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></label>
+  <button class="primary full" id="launchBookingPayment">LANÇAR E FINALIZAR</button>
+  <button class="secondary full" id="finishWithoutPayment">Finalizar sem receber agora</button>
+  <button class="secondary full" id="skipDeposit">Não necessita de sinal</button>
+  <p class="payment-help">Os 30% são apenas uma sugestão. O valor pode ser alterado livremente.</p>`;
+  render();
+  document.querySelector('#launchBookingPayment').onclick=()=>{
+    const amount=Number(document.querySelector('#bookingPayAmount').value||0);
+    if(amount<0||amount>appointment.totalValue){alert('Informe um valor válido.');return;}
+    if(amount===0){if(!confirm('Nenhum valor foi recebido. Finalizar e manter o atendimento totalmente A RECEBER?'))return;finalizeAppointment(appointment,0,document.querySelector('#bookingPayMethod').value,false);return;}
+    finalizeAppointment(appointment,amount,document.querySelector('#bookingPayMethod').value,false);
+  };
+  document.querySelector('#finishWithoutPayment').onclick=()=>{if(confirm('Finalizar sem registrar recebimento agora? O valor total ficará A RECEBER.'))finalizeAppointment(appointment,0,'',false);};
+  document.querySelector('#skipDeposit').onclick=()=>{if(confirm('Confirmar que este agendamento não necessita de sinal? O valor total ficará A RECEBER.'))finalizeAppointment(appointment,0,'',true);};
 }
 
 function addClient(origin='clients'){
@@ -300,13 +356,35 @@ function openAppointment(id){
   const a=currentData().appointments.find(x=>x.id===id); const c=currentData().clients.find(x=>x.id===a.clientId); const paid=paymentTotalForAppointment(id); const balance=Math.max(0,a.totalValue-paid);
   state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDAMENTO</span><h2>${escapeHtml(c?.name||'Cliente')}</h2></div><button data-close-modal>×</button></div><div class="detail-grid"><span>Data</span><b>${new Date(a.start).toLocaleDateString('pt-BR')}</b><span>Horário</span><b>${fmtTime(a.start)}–${fmtTime(a.end)}</b><span>Procedimentos</span><b>${escapeHtml(a.procedureNames?.join(', ')||'')}</b><span>Valor</span><b>${brl(a.totalValue)}</b><span>Recebido</span><b>${brl(paid)}</b><span>A receber</span><b>${brl(balance)}</b></div>${a.notes?`<div class="note-box">${escapeHtml(a.notes)}</div>`:''}<button class="primary full" id="registerPayment">Ir para Financeiro</button><button class="secondary full" id="scheduleMaintenance">Agendar próxima manutenção</button>`;render();
   document.querySelector('#registerPayment').onclick=()=>registerPayment(a.id);
-  document.querySelector('#scheduleMaintenance').onclick=()=>{state.modal=null;state.view='calendar';const sug=new Date(a.start);sug.setDate(sug.getDate()+15);state.selectedMonth=new Date(sug.getFullYear(),sug.getMonth(),1);render();setTimeout(()=>document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>openDay(b.dataset.day,true)),0);};
+  document.querySelector('#scheduleMaintenance').onclick=()=>{state.modal=null;state.view='calendar';state.calendarSelectionMode='maintenance';const sug=new Date(a.start);sug.setDate(sug.getDate()+15);state.selectedMonth=new Date(sug.getFullYear(),sug.getMonth(),1);render();};
 }
 
 function registerPayment(appointmentId){
-  const a=currentData().appointments.find(x=>x.id===appointmentId);const paid=paymentTotalForAppointment(appointmentId);const suggested=Math.min(a.totalValue-paid,Math.round(a.totalValue*0.30*100)/100);
-  state.modal=`<div class="modal-head"><div><span class="eyebrow">FINANCEIRO</span><h2>Registrar pagamento</h2></div><button data-close-modal>×</button></div><label>Valor recebido<input id="payAmount" type="number" step="0.01" value="${suggested.toFixed(2)}"></label><label>Forma<select id="payMethod"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></label><button class="primary full" id="savePayment">Confirmar recebimento</button>`;render();
-  document.querySelector('#savePayment').onclick=()=>{const amount=Number(document.querySelector('#payAmount').value||0);if(amount<=0)return;currentData().payments.push({id:uid('pay'),appointmentId,amount,method:document.querySelector('#payMethod').value,at:new Date().toISOString()});store.save('payment.create',{appointmentId,amount});const newPaid=paymentTotalForAppointment(appointmentId);const client=currentData().clients.find(c=>c.id===a.clientId);const integral=newPaid>=a.totalValue;const msg=integral?`Olá, ${client?.name||''}! 😊 Seu pagamento integral foi confirmado e seu horário está reservado para ${new Date(a.start).toLocaleDateString('pt-BR')} às ${fmtTime(a.start)}.\n\nGratidão pela preferência. 💅`:`Olá, ${client?.name||''}! 😊 Seu pagamento de ${brl(amount)} foi confirmado e seu horário está reservado para ${new Date(a.start).toLocaleDateString('pt-BR')} às ${fmtTime(a.start)}.\n\nGratidão pela preferência. 💅`;state.modal=`<div class="modal-head"><div><span class="eyebrow">PAGAMENTO CONFIRMADO</span><h2>${integral?'Pagamento integral':'Pagamento registrado'}</h2></div><button data-close-modal>×</button></div><div class="message-preview">${escapeHtml(msg).replace(/\n/g,'<br>')}</div><button class="primary full" id="sendWhatsapp">Enviar confirmação no WhatsApp</button>`;render();document.querySelector('#sendWhatsapp').onclick=()=>{const phone=(client?.whatsapp||'').replace(/\D/g,'');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');};};
+  const a=currentData().appointments.find(x=>x.id===appointmentId);
+  const paid=paymentTotalForAppointment(appointmentId);
+  const balance=Math.max(0,Number(a.totalValue||0)-paid);
+  if(balance<=0){alert('Este atendimento já está quitado.');return;}
+  const firstPayment=paid<=0;
+  const suggestedSignal=Math.round(Number(a.totalValue||0)*0.30*100)/100;
+  const suggested=firstPayment&&!a.noDeposit?Math.min(balance,suggestedSignal):balance;
+  const label=firstPayment&&!a.noDeposit?'Sinal / Entrada sugerida (30%)':'Saldo restante';
+  state.modal=`<div class="modal-head"><div><span class="eyebrow">FINANCEIRO</span><h2>Registrar pagamento</h2></div><button data-close-modal>×</button></div>
+  <div class="payment-summary"><span>Valor do atendimento</span><b>${brl(a.totalValue)}</b><span>Já recebido</span><b>${brl(paid)}</b><span>${label}</span><b>${brl(suggested)}</b><span>Saldo atual</span><b>${brl(balance)}</b></div>
+  <label>Valor para lançar<input id="payAmount" type="number" step="0.01" min="0.01" max="${balance}" value="${suggested.toFixed(2)}"></label>
+  <label>Forma<select id="payMethod"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></label>
+  <div class="live-payment-result"><span>Após este lançamento</span><strong id="paymentResult">Recebido ${brl(paid+suggested)} • A receber ${brl(Math.max(0,balance-suggested))}</strong></div>
+  <button class="primary full" id="savePayment">LANÇAR</button>`;render();
+  const input=document.querySelector('#payAmount');
+  const refresh=()=>{const amount=Math.max(0,Number(input.value||0));document.querySelector('#paymentResult').textContent=`Recebido ${brl(paid+amount)} • A receber ${brl(Math.max(0,balance-amount))}`;};
+  input.oninput=refresh;
+  document.querySelector('#savePayment').onclick=()=>{
+    const amount=Number(input.value||0);if(amount<=0){alert('Informe o valor recebido.');return;}if(amount>balance){alert(`O valor não pode ser maior que o saldo de ${brl(balance)}.`);return;}
+    const kind=firstPayment&&Math.abs(amount-suggestedSignal)<0.01?'signal':amount>=balance?'balance':'partial';
+    currentData().payments.push({id:uid('pay'),appointmentId,amount,method:document.querySelector('#payMethod').value,kind,at:new Date().toISOString()});store.save('payment.create',{appointmentId,amount,kind});
+    const newPaid=paymentTotalForAppointment(appointmentId);const client=currentData().clients.find(c=>c.id===a.clientId);const integral=newPaid>=a.totalValue;
+    const msg=integral?`Olá, ${client?.name||''}! 😊 Seu pagamento integral foi confirmado e seu horário está reservado para ${new Date(a.start).toLocaleDateString('pt-BR')} às ${fmtTime(a.start)}.\n\nGratidão pela preferência. 💅`:`Olá, ${client?.name||''}! 😊 Seu pagamento de ${brl(amount)} foi confirmado. Saldo restante: ${brl(Math.max(0,a.totalValue-newPaid))}. Seu horário está reservado para ${new Date(a.start).toLocaleDateString('pt-BR')} às ${fmtTime(a.start)}.\n\nGratidão pela preferência. 💅`;
+    state.modal=`<div class="modal-head"><div><span class="eyebrow">PAGAMENTO CONFIRMADO</span><h2>${integral?'Pagamento integral':'Pagamento registrado'}</h2></div><button data-close-modal>×</button></div><div class="message-preview">${escapeHtml(msg).replace(/\n/g,'<br>')}</div><button class="primary full" id="sendWhatsapp">Enviar confirmação no WhatsApp</button>`;render();document.querySelector('#sendWhatsapp').onclick=()=>{const phone=(client?.whatsapp||'').replace(/\D/g,'');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');};
+  };
 }
 
 function addExpense(){
@@ -320,8 +398,9 @@ function editProcedure(id){
   document.querySelector('#saveProcedure').onclick=()=>{if(!confirm('Salvar alterações deste procedimento?'))return;const h=Math.max(0,Number(document.querySelector('#procHours').value||0));const m=Math.min(59,Math.max(0,Number(document.querySelector('#procMinutes').value||0)));p.value=Number(document.querySelector('#procValue').value);p.durationMin=h*60+m;p.description=document.querySelector('#procDescription').value.trim();p.image=newImage;store.save('procedure.update',{procedureId:id});state.modal=null;render();};
 }
 function shareCatalog(){
-  const txt=['Olá! 😊','Confira os procedimentos e valores do Studio Juliane Boone:','',...currentData().procedures.filter(p=>p.active).map(p=>`• ${p.name}: ${brl(p.value)}`),'','Gratidão pela preferência.'].join('\n');
-  if(navigator.share){navigator.share({title:'Catálogo Juliane Boone',text:txt}).catch(()=>{});}else{navigator.clipboard?.writeText(txt);alert('Catálogo copiado para a área de transferência.');}
+  const url=publicCatalogUrl();
+  const txt=`Olá! 😊\nConfira o catálogo visual do Studio Juliane Boone e escolha o procedimento que deseja agendar:\n${url}`;
+  if(navigator.share){navigator.share({title:'Catálogo Juliane Boone',text:txt,url}).catch(()=>{});}else{navigator.clipboard?.writeText(txt);alert('Link do catálogo copiado para a área de transferência.');}
 }
 
 registerSW();
