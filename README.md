@@ -47,3 +47,9 @@ Fluxo operacional de reservas/confirmacao, mensagens WhatsApp, painel de status 
 - Agenda abre em visão semanal proporcional (08h–00h), com Semana/Mês.
 - Dia ampliado centralizado com fundo ofuscado e swipe SEG–DOM, travado dentro da semana.
 - Blocos de atendimento/particular ocupam proporcionalmente a duração real e abrem os detalhes.
+
+
+## v0.1.7
+- Toque em espaço livre da visão diária ampliada inicia novo registro com data/horário pré-selecionados.
+- Navegação do dia ampliado corrigida para avançar e retroceder um dia por vez, sem pular dias.
+- Swipe limitado à semana atual (SEG–DOM), com botões anterior/próximo como alternativa.
