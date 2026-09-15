@@ -1,4 +1,4 @@
-import { INITIAL_STATE } from './data.js';
+import { INITIAL_STATE, BASE_PROCEDURES } from './data.js';
 import { uid } from './utils.js';
 
 const ACTIVE_ENV_KEY = 'juliane.activeEnvironment';
@@ -20,7 +20,11 @@ export class Store {
       localStorage.setItem(keyFor(env), JSON.stringify(initial));
       return initial;
     }
-    return JSON.parse(raw);
+    const saved = JSON.parse(raw);
+    // Migração não destrutiva: acrescenta novos campos de catálogo sem alterar valores/tempos já personalizados.
+    saved.procedures = (saved.procedures || []).map(p => ({ ...BASE_PROCEDURES.find(b => b.id === p.id), ...p }));
+    BASE_PROCEDURES.forEach(base => { if (!saved.procedures.some(p => p.id === base.id)) saved.procedures.push(deepClone(base)); });
+    return saved;
   }
 
   save(action = 'save', meta = {}) {

@@ -27,6 +27,7 @@ function registerSW() {
 }
 
 function currentData() { return store.state; }
+function formatDuration(mins) { const m=Number(mins||0); const h=Math.floor(m/60); const r=m%60; return h ? `${h}h${String(r).padStart(2,'0')}` : `${r}min`; }
 
 function appointmentsInRange(start, end) {
   return currentData().appointments
@@ -178,19 +179,21 @@ function clients() {
 }
 
 function catalog() {
-  return `<main class="content"><section class="hero-card"><span class="eyebrow">CATÁLOGO</span><h1>Procedimentos</h1><p>Uma única base para agenda e compartilhamento.</p></section>
-  <section class="catalog-grid">${currentData().procedures.filter(p=>p.active).map(p=>`<article class="catalog-card"><div><strong>${escapeHtml(p.name)}</strong><span>${Math.floor(p.durationMin/60)}h${String(p.durationMin%60).padStart(2,'0')}</span></div><b>${brl(p.value)}</b></article>`).join('')}</section>
+  return `<main class="content"><section class="hero-card"><span class="eyebrow">CATÁLOGO</span><h1>Procedimentos</h1><p>Conheça os procedimentos, valores e cuidados de cada serviço.</p></section>
+  <section class="catalog-showcase">${currentData().procedures.filter(p=>p.active).map(p=>`<article class="portfolio-card">
+    <img src="${escapeHtml(p.image||'./assets/logo-juliane-boone.png')}" alt="${escapeHtml(p.name)}" loading="lazy">
+    <div class="portfolio-body"><div class="portfolio-title"><strong>${escapeHtml(p.name)}</strong><b>${brl(p.value)}</b></div><span class="portfolio-time">${formatDuration(p.durationMin)}</span><p>${escapeHtml(p.description||'')}</p></div>
+  </article>`).join('')}</section>
   <button class="primary full" id="shareCatalog">Compartilhar catálogo</button></main>`;
 }
 
 function admin() {
   return `<main class="content"><section class="section-card"><div class="section-head"><div><span class="eyebrow">ADM</span><h1>Procedimentos</h1></div></div>
-  <p class="muted">Altere valores e tempos-base sem atualizar o código. Mudanças aqui afetam novos agendamentos e o catálogo; históricos anteriores permanecem.</p>
-  <div class="simple-list">${currentData().procedures.map(p=>`<button class="procedure-row" data-procedure="${p.id}"><div><strong>${escapeHtml(p.name)}</strong><span>${brl(p.value)} • ${p.durationMin} min</span></div><span>Editar</span></button>`).join('')}</div>
+  <p class="muted">Altere valores, tempos, descrição e imagem sem atualizar o código. Mudanças aqui afetam novos agendamentos e o catálogo; históricos anteriores permanecem.</p>
+  <div class="procedure-table"><div class="procedure-table-head"><b>Procedimento</b><b>Valor</b><b>Tempo</b><b></b></div>${currentData().procedures.map(p=>`<button class="procedure-grid-row" data-procedure="${p.id}"><strong>${escapeHtml(p.name)}</strong><span>${brl(p.value)}</span><span>${formatDuration(p.durationMin)}</span><span>Editar</span></button>`).join('')}</div>
   ${store.environment==='sandbox'?'<button class="danger full" id="resetSandbox">Resetar Sandbox</button>':''}
   </section></main>`;
 }
-
 function renderModal() {
   if (!state.modal) return '';
   return `<div class="modal-backdrop"><div class="modal">${state.modal}</div></div>`;
@@ -250,6 +253,7 @@ function openNewAppointmentForm() {
   const procs = currentData().procedures.filter(p=>p.active);
   state.modal = `<div class="modal-head"><div><span class="eyebrow">NOVO AGENDAMENTO</span><h2>${new Date(state.selectedDateKey+'T12:00:00').toLocaleDateString('pt-BR')}</h2></div><button data-close-modal>×</button></div>
   <label>Cliente<select id="apptClient"><option value="">Selecione</option>${clients.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select></label>
+  <button class="secondary full compact" id="newClientFromAppointment">+ Cadastrar nova cliente</button>
   <fieldset><legend>Procedimentos</legend>${procs.map(p=>`<label class="check-row"><input type="checkbox" value="${p.id}" class="proc-check"><span>${escapeHtml(p.name)}</span><b>${brl(p.value)}</b></label>`).join('')}</fieldset>
   <div class="two-col"><label>Início<input type="time" id="apptStart" value="09:00" step="60"></label><label>Fim<input type="time" id="apptEnd" value="09:00" step="60"></label></div>
   <label>Valor do atendimento<input type="number" id="apptValue" step="0.01" value="0"></label>
@@ -264,6 +268,7 @@ function openNewAppointmentForm() {
     const [h,m]=startVal.split(':').map(Number); const d=new Date(`${state.selectedDateKey}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`); const e=addMinutes(d,mins);
     document.querySelector('#apptEnd').value=`${String(e.getHours()).padStart(2,'0')}:${String(e.getMinutes()).padStart(2,'0')}`;
   };
+  document.querySelector('#newClientFromAppointment').onclick=()=>addClient('appointment');
   document.querySelectorAll('.proc-check').forEach(x=>x.onchange=refreshCalc);
   document.querySelector('#apptStart').onchange=refreshCalc;
   document.querySelector('#saveAppointment').onclick=saveAppointment;
@@ -281,11 +286,11 @@ function saveAppointment() {
   state.modal=null; state.view='dashboard'; render();
 }
 
-function addClient(){
+function addClient(origin='clients'){
+  const fromAppointment = origin === 'appointment';
   state.modal=`<div class="modal-head"><div><span class="eyebrow">CLIENTE</span><h2>Nova cliente</h2></div><button data-close-modal>×</button></div><label>Nome<input id="clientName"></label><label>WhatsApp<input id="clientWhatsapp" inputmode="tel"></label><label>Observações<textarea id="clientNotes"></textarea></label><button class="primary full" id="saveClient">Salvar cliente</button>`;render();
-  document.querySelector('#saveClient').onclick=()=>{const name=document.querySelector('#clientName').value.trim();if(!name){alert('Informe o nome.');return;}const c={id:uid('client'),name,whatsapp:document.querySelector('#clientWhatsapp').value.trim(),notes:document.querySelector('#clientNotes').value.trim(),createdAt:new Date().toISOString()};currentData().clients.push(c);store.save('client.create',{clientId:c.id});state.modal=null;render();};
+  document.querySelector('#saveClient').onclick=()=>{const name=document.querySelector('#clientName').value.trim();if(!name){alert('Informe o nome.');return;}const c={id:uid('client'),name,whatsapp:document.querySelector('#clientWhatsapp').value.trim(),notes:document.querySelector('#clientNotes').value.trim(),createdAt:new Date().toISOString()};currentData().clients.push(c);store.save('client.create',{clientId:c.id,origin});state.modal=null;if(fromAppointment){openNewAppointmentForm();setTimeout(()=>{const sel=document.querySelector('#apptClient');if(sel)sel.value=c.id;},0);}else render();};
 }
-
 function openClient(id){
   const c=currentData().clients.find(x=>x.id===id); const aps=currentData().appointments.filter(a=>a.clientId===id).sort((a,b)=>new Date(b.start)-new Date(a.start)); const pays=currentData().payments.filter(p=>aps.some(a=>a.id===p.appointmentId));
   state.modal=`<div class="modal-head"><div><span class="eyebrow">CLIENTE</span><h2>${escapeHtml(c.name)}</h2></div><button data-close-modal>×</button></div><div class="tab-grid"><article><span>Histórico</span><strong>${aps.length}</strong></article><article><span>Recebido</span><strong>${brl(pays.reduce((s,p)=>s+p.amount,0))}</strong></article></div><h3>Histórico de atendimentos</h3><div class="simple-list">${aps.length?aps.map(a=>`<button class="client-history" data-appointment="${a.id}"><div><strong>${new Date(a.start).toLocaleDateString('pt-BR')} • ${fmtTime(a.start)}</strong><span>${escapeHtml(a.procedureNames?.join(', ')||'')}</span></div><b>${brl(a.totalValue)}</b></button>`).join(''):'<div class="empty">Sem atendimentos.</div>'}</div>`;render();document.querySelectorAll('[data-appointment]').forEach(b=>b.onclick=()=>openAppointment(b.dataset.appointment));
@@ -309,9 +314,11 @@ function addExpense(){
 }
 
 function editProcedure(id){
-  const p=currentData().procedures.find(x=>x.id===id);state.modal=`<div class="modal-head"><div><span class="eyebrow">ADM • PROCEDIMENTO</span><h2>${escapeHtml(p.name)}</h2></div><button data-close-modal>×</button></div><label>Valor padrão<input id="procValue" type="number" step="0.01" value="${p.value}"></label><label>Duração padrão (minutos)<input id="procDuration" type="number" step="5" value="${p.durationMin}"></label><div class="warning">Ao salvar, o novo padrão será usado em <b>novos agendamentos</b> e no <b>Catálogo</b>. Histórico e agendamentos já salvos não serão alterados.</div><button class="primary full" id="saveProcedure">Salvar novo valor/tempo</button>`;render();document.querySelector('#saveProcedure').onclick=()=>{if(!confirm('Salvar novo valor e tempo padrão?'))return;p.value=Number(document.querySelector('#procValue').value);p.durationMin=Number(document.querySelector('#procDuration').value);store.save('procedure.update',{procedureId:id});state.modal=null;render();};
+  const p=currentData().procedures.find(x=>x.id===id);state.modal=`<div class="modal-head"><div><span class="eyebrow">ADM • PROCEDIMENTO</span><h2>${escapeHtml(p.name)}</h2></div><button data-close-modal>×</button></div><label>Valor padrão<input id="procValue" type="number" step="0.01" value="${p.value}"></label><div class="two-col"><label>Horas<input id="procHours" type="number" min="0" step="1" value="${Math.floor(p.durationMin/60)}"></label><label>Minutos<input id="procMinutes" type="number" min="0" max="59" step="5" value="${p.durationMin%60}"></label></div><label>Descrição do catálogo<textarea id="procDescription">${escapeHtml(p.description||'')}</textarea></label><label>Imagem do catálogo<input id="procImageFile" type="file" accept="image/*"></label><div class="catalog-image-preview"><img id="procImagePreview" src="${escapeHtml(p.image||'./assets/logo-juliane-boone.png')}" alt="Prévia"></div><div class="warning">Ao salvar, o novo padrão será usado em <b>novos agendamentos</b> e no <b>Catálogo</b>. Histórico e agendamentos já salvos não serão alterados.</div><button class="primary full" id="saveProcedure">Salvar alterações</button>`;render();
+  let newImage=p.image;
+  document.querySelector('#procImageFile').onchange=(ev)=>{const file=ev.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas');const max=900;const scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);newImage=canvas.toDataURL('image/jpeg',.82);document.querySelector('#procImagePreview').src=newImage;};img.src=reader.result;};reader.readAsDataURL(file);};
+  document.querySelector('#saveProcedure').onclick=()=>{if(!confirm('Salvar alterações deste procedimento?'))return;const h=Math.max(0,Number(document.querySelector('#procHours').value||0));const m=Math.min(59,Math.max(0,Number(document.querySelector('#procMinutes').value||0)));p.value=Number(document.querySelector('#procValue').value);p.durationMin=h*60+m;p.description=document.querySelector('#procDescription').value.trim();p.image=newImage;store.save('procedure.update',{procedureId:id});state.modal=null;render();};
 }
-
 function shareCatalog(){
   const txt=['Olá! 😊','Confira os procedimentos e valores do Studio Juliane Boone:','',...currentData().procedures.filter(p=>p.active).map(p=>`• ${p.name}: ${brl(p.value)}`),'','Gratidão pela preferência.'].join('\n');
   if(navigator.share){navigator.share({title:'Catálogo Juliane Boone',text:txt}).catch(()=>{});}else{navigator.clipboard?.writeText(txt);alert('Catálogo copiado para a área de transferência.');}
