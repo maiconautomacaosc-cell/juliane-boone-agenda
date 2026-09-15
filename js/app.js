@@ -16,7 +16,10 @@ const state = {
   selectionOrigin: null,
   returnClientId: null,
   dashboardTab: 'service',
-  dashboardPeriod: 'week'
+  dashboardPeriod: 'week',
+  calendarView: 'week',
+  expandedDayIndex: null,
+  prefillTime: null
 };
 
 const STUDIO_WHATSAPP = '5547989259820';
@@ -136,6 +139,11 @@ function appointmentRow(a) {
 }
 
 function calendar() {
+  if (state.calendarSelectionMode || state.calendarView === 'month') return monthlyCalendar();
+  return weeklyCalendar();
+}
+
+function monthlyCalendar() {
   const d = state.selectedMonth;
   const year = d.getFullYear(), month = d.getMonth();
   const first = new Date(year,month,1), last = new Date(year,month+1,0);
@@ -146,6 +154,7 @@ function calendar() {
   while (cells.length % 7) cells.push(null);
   const monthLabel = new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(d);
   return `<main class="content ${state.calendarSelectionMode?'calendar-selecting':''}"><section class="section-card calendar-card ${state.calendarSelectionMode?'selection-focus':''}">
+    <div class="agenda-view-tabs"><button data-calendar-view="week">SEMANA</button><button data-calendar-view="month" class="active">MÊS</button></div>
     <div class="section-head"><div><span class="eyebrow">AGENDA</span><h1 class="capitalize">${monthLabel}</h1></div>
       <div class="week-controls"><button id="prevMonth">‹</button><button id="todayMonth">Hoje</button><button id="nextMonth">›</button></div>
     </div>
@@ -156,6 +165,53 @@ function calendar() {
   </section></main>`;
 }
 
+function weekDays() {
+  const monday=startOfWeek(state.selectedWeek);
+  return Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setDate(monday.getDate()+i);return d;});
+}
+
+function dayAppointments(date) {
+  const key=toLocalDateKey(date);
+  return currentData().appointments.filter(a=>a.status!=='cancelled'&&toLocalDateKey(new Date(a.start))===key).sort((a,b)=>new Date(a.start)-new Date(b.start));
+}
+
+function timelineBlock(a, expanded=false) {
+  const start=new Date(a.start), end=new Date(a.end);
+  const startMin=Math.max(0,(start.getHours()*60+start.getMinutes())-480);
+  const endMin=Math.min(960,Math.max(startMin+15,(end.getHours()*60+end.getMinutes())-480+(end.getDate()!==start.getDate()?1440:0)));
+  if(startMin>=960||endMin<=0) return '';
+  const top=(startMin/960)*100, height=Math.max(expanded?2.1:1.5,((endMin-startMin)/960)*100);
+  const client=currentData().clients.find(c=>c.id===a.clientId);
+  const title=a.type==='personal'?(a.personalKind||'Particular'):(client?.name||'Cliente');
+  const sub=a.type==='personal'?(a.notes||'Particular'):(a.procedureNames?.join(', ')||'Atendimento');
+  return `<button class="timeline-event ${a.type==='personal'?'is-personal':'is-service'} ${expanded?'expanded-event':''}" data-timeline-appointment="${a.id}" style="top:${top}%;height:${height}%" title="${escapeHtml(title)}"><b>${expanded?`${fmtTime(a.start)}–${fmtTime(a.end)} · `:''}${escapeHtml(title)}</b>${expanded?`<span>${escapeHtml(sub)}</span>`:''}</button>`;
+}
+
+function weeklyCalendar() {
+  const days=weekDays(), todayKey=toLocalDateKey(new Date());
+  const labels=['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+  const expanded=state.expandedDayIndex!==null ? expandedDayOverlay(days,state.expandedDayIndex) : '';
+  return `<main class="content"><section class="section-card weekly-card">
+    <div class="agenda-view-tabs"><button data-calendar-view="week" class="active">SEMANA</button><button data-calendar-view="month">MÊS</button></div>
+    <div class="section-head weekly-head"><div><span class="eyebrow">AGENDA • VISÃO PRINCIPAL</span><h1>${weekLabel(state.selectedWeek)}</h1></div><div class="week-controls"><button id="prevAgendaWeek">‹</button><button id="todayAgendaWeek">Hoje</button><button id="nextAgendaWeek">›</button></div></div>
+    <div class="weekly-legend"><span><i class="mini service"></i>Atendimento</span><span><i class="mini personal"></i>Particular</span><small>Toque no dia para ampliar</small></div>
+    <div class="week-timeline">
+      <div class="time-axis">${[8,10,12,14,16,18,20,22,24].map((h,i)=>`<span style="top:${i*12.5}%">${String(h%24).padStart(2,'0')}h</span>`).join('')}</div>
+      <div class="week-columns">${days.map((d,i)=>{const key=toLocalDateKey(d),aps=dayAppointments(d);return `<div class="week-day ${key===todayKey?'today':''}"><button class="week-day-head" data-expand-day="${i}"><b>${labels[i]}</b><span>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</span></button><div class="week-day-track" data-expand-day="${i}">${aps.map(a=>timelineBlock(a)).join('')}</div></div>`}).join('')}</div>
+    </div>
+  </section>${expanded}</main>`;
+}
+
+function expandedDayOverlay(days,index) {
+  const d=days[index], key=toLocalDateKey(d), aps=dayAppointments(d), labels=['SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO','DOMINGO'];
+  const today=key===toLocalDateKey(new Date());
+  return `<div class="day-focus-backdrop" id="dayFocusBackdrop"><section class="day-focus" id="dayFocus" data-day-index="${index}">
+    <div class="day-focus-head"><button id="closeDayFocus" aria-label="Fechar">×</button><div><span class="eyebrow">${today?'HOJE • ':''}${labels[index]}</span><h2>${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</h2></div><span class="swipe-hint">↔</span></div>
+    <div class="focus-day-tabs">${days.map((x,i)=>`<button data-focus-day="${i}" class="${i===index?'active':''}">${['SEG','TER','QUA','QUI','SEX','SÁB','DOM'][i]}<small>${String(x.getDate()).padStart(2,'0')}</small></button>`).join('')}</div>
+    <div class="focus-timeline"><div class="focus-axis">${Array.from({length:17},(_,i)=>`<span style="top:${(i/16)*100}%">${String((8+i)%24).padStart(2,'0')}:00</span>`).join('')}</div><div class="focus-track" id="focusTrack" data-date-key="${key}">${Array.from({length:17},(_,i)=>`<i style="top:${(i/16)*100}%"></i>`).join('')}${aps.map(a=>timelineBlock(a,true)).join('')}</div></div>
+    <div class="focus-note">Toque em um espaço livre para iniciar um agendamento nesse horário.</div>
+  </section></div>`;
+}
 function calCell(date) {
   if (!date) return '<div></div>';
   const key = toLocalDateKey(date);
@@ -251,6 +307,17 @@ function bind() {
   document.querySelector('#prevMonth')?.addEventListener('click',()=>{state.selectedMonth=new Date(state.selectedMonth.getFullYear(),state.selectedMonth.getMonth()-1,1);render();});
   document.querySelector('#nextMonth')?.addEventListener('click',()=>{state.selectedMonth=new Date(state.selectedMonth.getFullYear(),state.selectedMonth.getMonth()+1,1);render();});
   document.querySelector('#todayMonth')?.addEventListener('click',()=>{const n=new Date();state.selectedMonth=new Date(n.getFullYear(),n.getMonth(),1);render();});
+  document.querySelectorAll('[data-calendar-view]').forEach(b=>b.onclick=()=>{state.calendarView=b.dataset.calendarView;state.expandedDayIndex=null;if(state.calendarView==='month'){const w=state.selectedWeek;state.selectedMonth=new Date(w.getFullYear(),w.getMonth(),1);}render();});
+  document.querySelector('#prevAgendaWeek')?.addEventListener('click',()=>{state.selectedWeek=new Date(state.selectedWeek);state.selectedWeek.setDate(state.selectedWeek.getDate()-7);state.expandedDayIndex=null;render();});
+  document.querySelector('#nextAgendaWeek')?.addEventListener('click',()=>{state.selectedWeek=new Date(state.selectedWeek);state.selectedWeek.setDate(state.selectedWeek.getDate()+7);state.expandedDayIndex=null;render();});
+  document.querySelector('#todayAgendaWeek')?.addEventListener('click',()=>{state.selectedWeek=startOfWeek(new Date());state.expandedDayIndex=null;render();});
+  document.querySelectorAll('[data-expand-day]').forEach(b=>b.addEventListener('click',e=>{if(e.target.closest('[data-timeline-appointment]'))return;state.expandedDayIndex=Number(b.dataset.expandDay);render();}));
+  document.querySelectorAll('[data-focus-day]').forEach(b=>b.onclick=()=>{state.expandedDayIndex=Number(b.dataset.focusDay);render();});
+  document.querySelector('#closeDayFocus')?.addEventListener('click',()=>{state.expandedDayIndex=null;render();});
+  document.querySelector('#dayFocusBackdrop')?.addEventListener('click',e=>{if(e.target.id==='dayFocusBackdrop'){state.expandedDayIndex=null;render();}});
+  document.querySelectorAll('[data-timeline-appointment]').forEach(b=>b.onclick=e=>{e.stopPropagation();openAppointment(b.dataset.timelineAppointment);});
+  const focusTrack=document.querySelector('#focusTrack');
+  if(focusTrack){focusTrack.addEventListener('click',e=>{if(e.target.closest('[data-timeline-appointment]'))return;const r=focusTrack.getBoundingClientRect(),ratio=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)),mins=Math.round((480+ratio*960)/15)*15,h=Math.min(23,Math.floor(mins/60)),m=mins%60;state.selectedDateKey=focusTrack.dataset.dateKey;state.prefillTime=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;state.draftAppointment={procedureIds:[],notes:'',totalValue:0,clientId:null,origin:'new'};state.selectionOrigin='new';state.expandedDayIndex=null;openNewAppointmentForm();});let sx=0,sy=0;const focus=document.querySelector('#dayFocus');focus?.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});focus?.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.3){const next=state.expandedDayIndex+(dx<0?1:-1);if(next>=0&&next<=6){state.expandedDayIndex=next;render();}else{focus.classList.add('edge-bump');setTimeout(()=>focus.classList.remove('edge-bump'),220);}}},{passive:true});}
   document.querySelector('#cancelCalendarSelection')?.addEventListener('click',goBack);
   document.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>openDay(b.dataset.day,!!state.calendarSelectionMode));
   document.querySelectorAll('[data-appointment]').forEach(b=>b.onclick=()=>openAppointment(b.dataset.appointment));
@@ -297,7 +364,7 @@ function openNewAppointmentForm() {
   ${cycle>=2?`<div class="cycle-alert"><b>${cycle} manutenções desde a última aplicação.</b><span>Avaliar necessidade de nova aplicação.</span></div>`:''}
   ${state.selectionOrigin==='maintenance'?`<label class="check-row new-application-choice"><input type="checkbox" id="newApplicationChoice"><span><b>Nova aplicação</b><small>Marque se será necessário remover/refazer tudo.</small></span></label>`:''}
   <fieldset><legend>Procedimentos</legend>${procs.map(p=>`<div class="procedure-choice"><label class="check-row"><input type="checkbox" value="${p.id}" class="proc-check" ${(state.selectionOrigin==='maintenance'&&p.id==='manutencao')?'checked':''}><span>${escapeHtml(p.name)}</span><b>${brl(p.value)}</b></label>${p.id==='reposicao-quebrada'?`<div class="qty-control" data-qty-wrap="${p.id}"><button type="button" data-qty-minus="${p.id}">−</button><strong data-qty="${p.id}">1</strong><button type="button" data-qty-plus="${p.id}">+</button><small>unidade(s)</small></div>`:''}</div>`).join('')}</fieldset>
-  <div class="two-col"><label>Início<input type="time" id="apptStart" value="09:00" step="60"></label><label>Fim<input type="time" id="apptEnd" value="09:00" step="60"></label></div>
+  <div class="two-col"><label>Início<input type="time" id="apptStart" value="${state.prefillTime||'09:00'}" step="60"></label><label>Fim<input type="time" id="apptEnd" value="${state.prefillTime||'09:00'}" step="60"></label></div>
   <label>Valor do atendimento<input type="number" id="apptValue" step="0.01" value="0"></label>
   <label>Anotações (opcional)<textarea id="apptNotes"></textarea></label>
   <button class="primary full" id="saveAppointment">Confirmar agendamento</button>`;
@@ -324,7 +391,7 @@ function finalizeAppointment(appointment, initialPayment=0, method='PIX', noDepo
   appointment.status=(initialPayment>0||noDeposit)?'scheduled':'awaiting_confirmation';
   if(!currentData().appointments.some(a=>a.id===appointment.id)) currentData().appointments.push(appointment);
   if(initialPayment>0){currentData().payments.push({id:uid('pay'),appointmentId:appointment.id,amount:initialPayment,method,kind:'signal',at:new Date().toISOString()});addHistory(appointment,'payment',`Recebimento ${brl(initialPayment)}`,{amount:initialPayment,method});}
-  store.save('appointment.create',{appointmentId:appointment.id,initialPayment,noDeposit});state.calendarSelectionMode=null;state.view='dashboard';navigationStack=['dashboard'];openReservationActions(appointment.id);
+  store.save('appointment.create',{appointmentId:appointment.id,initialPayment,noDeposit});state.calendarSelectionMode=null;state.prefillTime=null;state.view='dashboard';navigationStack=['dashboard'];openReservationActions(appointment.id);
 }
 
 function openBookingPayment(appointment) { finalizeAppointment(appointment,0,'',false); }
