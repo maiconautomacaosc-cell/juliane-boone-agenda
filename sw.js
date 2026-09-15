@@ -1,10 +1,11 @@
-const CACHE = 'juliane-boone-v0.1.2';
+const CACHE = 'juliane-boone-v0.1.3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
   './assets/logo-juliane-boone.png',
+  './assets/informacoes-agendamento.jpg',
   './assets/catalog/alongamento.jpg',
   './assets/catalog/banho-gel.jpg',
   './assets/catalog/esmaltacao-gel.jpg',
