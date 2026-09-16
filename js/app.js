@@ -178,8 +178,9 @@ function expandedDayOverlay(key){
   if(idx<0||idx>6){state.expandedDayKey=null;return ''}
   const aps=currentData().appointments.filter(a=>toLocalDateKey(new Date(a.start))===key&&a.status!=='cancelled').sort((a,b)=>new Date(a.start)-new Date(b.start));
   const hourLines=Array.from({length:17},(_,i)=>8+i);
+  const focusTitle=`${d.toLocaleDateString('pt-BR',{weekday:'long'}).toUpperCase()} • ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'}).toUpperCase()}`;
   return `<div class="day-focus-backdrop" id="dayFocus" data-day-index="${idx}"><div class="day-focus-panel">
-    <div class="day-focus-head"><button id="closeDayFocus">×</button><button id="prevFocusDay" class="focus-nav" aria-label="Dia anterior">‹</button><div><span>${d.toLocaleDateString('pt-BR',{weekday:'long'}).toUpperCase()}</span><strong>${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}</strong></div><button id="nextFocusDay" class="focus-nav" aria-label="Próximo dia">›</button><small>${idx+1}/7</small></div>
+    <div class="day-focus-head"><button type="button" id="closeDayFocus" aria-label="Fechar">×</button><button type="button" id="prevFocusDay" class="focus-nav" aria-label="Dia anterior">‹</button><strong class="focus-date-title">${focusTitle}</strong><button type="button" id="nextFocusDay" class="focus-nav" aria-label="Próximo dia">›</button><small>${idx+1}/7</small></div>
     <div class="focus-timeline"><div class="focus-axis">${hourLines.map((h,i)=>`<span style="top:${i/16*100}%">${h===24?'00':String(h).padStart(2,'0')}h</span>`).join('')}</div><div class="focus-track" data-free-day="${key}">${hourLines.slice(0,-1).map((h,i)=>`<i style="top:${i/16*100}%"></i>`).join('')}${aps.map(focusBlock).join('')}</div></div>
     <div class="swipe-hint">‹ deslize para trocar de dia ›</div>
   </div></div>`;
@@ -294,8 +295,8 @@ function bind() {
   document.querySelector('#todayAgendaWeek')?.addEventListener('click',()=>{state.selectedWeek=startOfWeek(new Date());render();});
   document.querySelectorAll('[data-expand-day]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();const key=b.dataset.expandDay;if(state.calendarSelectionMode){openDay(key,true);}else{state.expandedDayKey=key;render();}});
   document.querySelector('#closeDayFocus')?.addEventListener('click',()=>{state.expandedDayKey=null;render();});
-  document.querySelector('#prevFocusDay')?.addEventListener('click',(e)=>{e.stopPropagation();moveFocusedDay(-1);});
-  document.querySelector('#nextFocusDay')?.addEventListener('click',(e)=>{e.stopPropagation();moveFocusedDay(1);});
+  document.querySelector('#prevFocusDay')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();moveFocusedDay(-1);});
+  document.querySelector('#nextFocusDay')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();moveFocusedDay(1);});
   document.querySelectorAll('[data-free-day]').forEach(track=>track.addEventListener('click',handleFreeSlotClick));
   document.querySelectorAll('[data-focus-appt]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();openAppointment(b.dataset.focusAppt);});
   bindDaySwipe();
@@ -329,7 +330,7 @@ function moveFocusedDay(delta){
 function bindDaySwipe(){
   const el=document.querySelector('#dayFocus');if(!el)return;
   let x0=null,y0=null,pointerId=null,moved=false;
-  el.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;x0=e.clientX;y0=e.clientY;pointerId=e.pointerId;moved=false;try{el.setPointerCapture(pointerId)}catch(_){};});
+  el.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;if(e.pointerType==='mouse'&&e.button!==0)return;x0=e.clientX;y0=e.clientY;pointerId=e.pointerId;moved=false;try{el.setPointerCapture(pointerId)}catch(_){};});
   el.addEventListener('pointermove',e=>{if(pointerId!==e.pointerId||x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy))moved=true;});
   el.addEventListener('pointerup',e=>{if(pointerId!==e.pointerId||x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;const wasSwipe=moved&&Math.abs(dx)>=55&&Math.abs(dx)>Math.abs(dy);x0=y0=null;pointerId=null;moved=false;if(!wasSwipe)return;e.preventDefault();e.stopPropagation();moveFocusedDay(dx<0?1:-1);});
   el.addEventListener('pointercancel',()=>{x0=y0=null;pointerId=null;moved=false;});
