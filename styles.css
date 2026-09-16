@@ -43,3 +43,10 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 .focus-track{cursor:pointer;touch-action:pan-y}
 .day-focus-head .focus-nav{width:42px;height:42px;border-radius:50%;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-size:26px;line-height:1;display:grid;place-items:center}
 .day-focus-head .focus-nav:disabled{opacity:.35}
+
+/* v0.1.8 — correção do cabeçalho e navegação da visão diária */
+.day-focus-head{display:grid!important;grid-template-columns:40px 40px minmax(0,1fr) 40px 34px!important;align-items:center!important;gap:5px!important;margin-bottom:8px!important;text-align:center!important}
+.day-focus-head>button{width:38px!important;height:38px!important;border:0!important;border-radius:50%!important;background:var(--cream2)!important;font-size:24px!important;display:grid!important;place-items:center!important;padding:0!important}
+.day-focus-head .focus-date-title{min-width:0;font-size:12px!important;line-height:1.2!important;color:var(--ink)!important;text-transform:uppercase;white-space:normal;overflow-wrap:normal;word-break:normal}
+.day-focus-head>small{font-size:12px!important;color:var(--muted)!important;font-weight:800!important;white-space:nowrap}
+@media(max-width:380px){.day-focus-head{grid-template-columns:36px 36px minmax(0,1fr) 36px 30px!important;gap:3px!important}.day-focus-head>button{width:34px!important;height:34px!important}.day-focus-head .focus-date-title{font-size:11px!important}}
