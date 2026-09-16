@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.8';
+const CACHE = 'juliane-boone-v0.1.9-day-nav';
 const ASSETS = [
   './',
   './index.html',
