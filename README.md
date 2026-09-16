@@ -53,3 +53,14 @@ Fluxo operacional de reservas/confirmacao, mensagens WhatsApp, painel de status 
 - Toque em espaço livre da visão diária ampliada inicia novo registro com data/horário pré-selecionados.
 - Navegação do dia ampliado corrigida para avançar e retroceder um dia por vez, sem pular dias.
 - Swipe limitado à semana atual (SEG–DOM), com botões anterior/próximo como alternativa.
+
+## v0.1.12 — fluxo de atendimento e mensagens
+- mensagens de atendimento com estado ENVIAR/REENVIAR e direcionamento ao WhatsApp Business quando suportado pelo aparelho;
+- texto de reserva ajustado para “até o final do dia de hoje”;
+- conclusão e financeiro separados: pagamento não regride atendimento concluído para confirmação;
+- status combinado de atendimento + financeiro no painel;
+- próxima manutenção liberada somente após conclusão e conforme “Requer manutenção periódica”;
+- Alongamento vem com manutenção periódica ativa por padrão;
+- seleção de próxima manutenção inicia na visão Semana/Mês;
+- X durante escolha de dia retorna à seleção sem abandonar o fluxo;
+- catálogo e compartilhamento com linguagem em primeira pessoa e foco em autoestima.

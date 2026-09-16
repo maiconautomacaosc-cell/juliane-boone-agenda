@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.11-round-fixes';
+const CACHE = 'juliane-boone-v0.1.12-workflow-messages';
 const ASSETS = [
   './',
   './index.html',
