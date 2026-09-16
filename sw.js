@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.10-day-client';
+const CACHE = 'juliane-boone-v0.1.11-round-fixes';
 const ASSETS = [
   './',
   './index.html',
