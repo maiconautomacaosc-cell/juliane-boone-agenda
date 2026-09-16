@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.12-workflow-messages';
+const CACHE = 'juliane-boone-v0.1.12.1-hotfix-appjs';
 const ASSETS = [
   './',
   './index.html',
