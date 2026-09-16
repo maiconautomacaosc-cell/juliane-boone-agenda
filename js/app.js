@@ -174,7 +174,7 @@ function timelineBlock(a){
 }
 
 function expandedDayOverlay(key){
-  const d=new Date(key+'T12:00:00'),weekStart=startOfWeek(state.selectedWeek),idx=Math.round((d-weekStart)/86400000);
+  const d=new Date(key+'T12:00:00'),day=d.getDay(),idx=day===0?6:day-1;
   if(idx<0||idx>6){state.expandedDayKey=null;return ''}
   const aps=currentData().appointments.filter(a=>toLocalDateKey(new Date(a.start))===key&&a.status!=='cancelled').sort((a,b)=>new Date(a.start)-new Date(b.start));
   const hourLines=Array.from({length:17},(_,i)=>8+i);
@@ -329,11 +329,15 @@ function moveFocusedDay(delta){
 
 function bindDaySwipe(){
   const el=document.querySelector('#dayFocus');if(!el)return;
-  let x0=null,y0=null,pointerId=null,moved=false;
-  el.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;if(e.pointerType==='mouse'&&e.button!==0)return;x0=e.clientX;y0=e.clientY;pointerId=e.pointerId;moved=false;try{el.setPointerCapture(pointerId)}catch(_){};});
-  el.addEventListener('pointermove',e=>{if(pointerId!==e.pointerId||x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;if(Math.abs(dx)>18&&Math.abs(dx)>Math.abs(dy))moved=true;});
-  el.addEventListener('pointerup',e=>{if(pointerId!==e.pointerId||x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;const wasSwipe=moved&&Math.abs(dx)>=55&&Math.abs(dx)>Math.abs(dy);x0=y0=null;pointerId=null;moved=false;if(!wasSwipe)return;e.preventDefault();e.stopPropagation();moveFocusedDay(dx<0?1:-1);});
-  el.addEventListener('pointercancel',()=>{x0=y0=null;pointerId=null;moved=false;});
+  let x0=null,y0=null;
+  const start=(x,y,target)=>{if(target.closest('button'))return false;x0=x;y0=y;return true;};
+  const finish=(x,y,e)=>{if(x0===null)return;const dx=x-x0,dy=y-y0;x0=y0=null;if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;e.preventDefault();e.stopPropagation();moveFocusedDay(dx<0?1:-1);};
+  el.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];start(t.clientX,t.clientY,e.target);},{passive:true});
+  el.addEventListener('touchend',e=>{if(!e.changedTouches.length)return;const t=e.changedTouches[0];finish(t.clientX,t.clientY,e);},{passive:false});
+  el.addEventListener('touchcancel',()=>{x0=y0=null;},{passive:true});
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||(e.pointerType==='mouse'&&e.button!==0))return;start(e.clientX,e.clientY,e.target);});
+  el.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;finish(e.clientX,e.clientY,e);});
+  el.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch')x0=y0=null;});
 }
 
 function slotTimeFromTrack(track,clientY){
