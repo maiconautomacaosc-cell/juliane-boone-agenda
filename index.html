@@ -10,10 +10,24 @@
   <title>Juliane Boone • Agenda</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./assets/logo-juliane-boone.png" />
-  <link rel="stylesheet" href="./styles.css?v=0.1.22" />
+  <link rel="stylesheet" href="./styles.css?v=0122diag" />
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="./js/app.js?v=0.1.22"></script>
+  <div id="boot-diagnostic" style="display:none;position:fixed;inset:0;z-index:999999;background:#faf6f0;color:#211f1d;padding:24px;font-family:system-ui,-apple-system,sans-serif;overflow:auto">
+    <h2 style="margin-top:40px">Diagnóstico de inicialização</h2>
+    <p>O aplicativo encontrou um erro antes de abrir. Tire um print desta tela e envie no chat.</p>
+    <pre id="boot-error" style="white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px"></pre>
+  </div>
+  <script>
+    (function(){
+      var shown=false;
+      function show(msg){ if(shown)return; shown=true; var box=document.getElementById('boot-diagnostic'), out=document.getElementById('boot-error'); if(box&&out){out.textContent=msg;box.style.display='block';}}
+      window.addEventListener('error',function(e){show('ERRO JAVASCRIPT\n'+(e.message||'Erro desconhecido')+'\nArquivo: '+(e.filename||'-')+'\nLinha: '+(e.lineno||'-')+':'+(e.colno||'-')+'\n\n'+(e.error&&e.error.stack?e.error.stack:''));});
+      window.addEventListener('unhandledrejection',function(e){var r=e.reason;show('PROMISE REJEITADA\n'+(r&&r.stack?r.stack:String(r)));});
+      setTimeout(function(){var app=document.getElementById('app');if(!shown && (!app || !app.innerHTML.trim()))show('TIMEOUT DE INICIALIZAÇÃO\nO módulo principal não renderizou conteúdo em 6 segundos.\nPossíveis causas: falha ao carregar js/app.js ou alguma dependência importada.');},6000);
+    })();
+  </script>
+  <script type="module" src="./js/app.js?v=0122diag"></script>
 </body>
 </html>
