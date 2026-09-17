@@ -55,7 +55,7 @@ const navItems = [
 
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.21', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.22', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -369,24 +369,32 @@ function bind() {
 
 
 function moveFocusedDay(delta){
-  const el=document.querySelector('#dayFocus');if(!el)return;
-  const idx=Number(el.dataset.dayIndex),next=idx+delta;
+  const el=document.querySelector('#dayFocus');if(!el||!state.expandedDayKey)return;
+  const current=new Date(state.expandedDayKey+'T12:00:00');
+  const weekStart=startOfWeek(current);
+  const currentIdx=Math.round((new Date(current.getFullYear(),current.getMonth(),current.getDate())-new Date(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate()))/86400000);
+  const next=currentIdx+delta;
   if(next<0||next>6){el.classList.add('edge-bump');setTimeout(()=>el.classList.remove('edge-bump'),220);return;}
-  const d=new Date(startOfWeek(state.selectedWeek));d.setDate(d.getDate()+next);
+  const d=new Date(weekStart);d.setDate(d.getDate()+next);
   state.expandedDayKey=toLocalDateKey(d);render();
 }
 
 function bindDaySwipe(){
   const el=document.querySelector('#dayFocus');if(!el)return;
-  let x0=null,y0=null;
-  const start=(x,y,target)=>{if(target.closest('button'))return false;x0=x;y0=y;return true;};
-  const finish=(x,y,e)=>{if(x0===null)return;const dx=x-x0,dy=y-y0;x0=y0=null;if(Math.abs(dx)<45||Math.abs(dx)<=Math.abs(dy))return;e.preventDefault();e.stopPropagation();moveFocusedDay(dx<0?1:-1);};
-  el.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];start(t.clientX,t.clientY,e.target);},{passive:true});
-  el.addEventListener('touchend',e=>{if(!e.changedTouches.length)return;const t=e.changedTouches[0];finish(t.clientX,t.clientY,e);},{passive:false});
-  el.addEventListener('touchcancel',()=>{x0=y0=null;},{passive:true});
-  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||(e.pointerType==='mouse'&&e.button!==0))return;start(e.clientX,e.clientY,e.target);});
-  el.addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;finish(e.clientX,e.clientY,e);});
-  el.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch')x0=y0=null;});
+  let x0=null,y0=null,pointerId=null;
+  const clear=()=>{x0=y0=pointerId=null;};
+  el.addEventListener('pointerdown',e=>{
+    clear();
+    if((e.pointerType==='mouse'&&e.button!==0)||e.target.closest('button'))return;
+    pointerId=e.pointerId;x0=e.clientX;y0=e.clientY;
+  });
+  el.addEventListener('pointerup',e=>{
+    if(pointerId===null||e.pointerId!==pointerId)return;
+    const dx=e.clientX-x0,dy=e.clientY-y0;clear();
+    if(Math.abs(dx)<55||Math.abs(dx)<=Math.abs(dy))return;
+    e.preventDefault();e.stopPropagation();moveFocusedDay(dx<0?1:-1);
+  });
+  el.addEventListener('pointercancel',clear);
 }
 
 function slotTimeFromTrack(track,clientY){
@@ -397,7 +405,7 @@ function slotTimeFromTrack(track,clientY){
 function handleFreeSlotClick(e){
   if(e.target.closest('[data-focus-appt]'))return;
   const track=e.currentTarget,key=track.dataset.freeDay,time=slotTimeFromTrack(track,e.clientY);
-  state.selectedDateKey=key;state.slotPrefillTime=time;
+  state.selectedDateKey=key;state.slotPrefillTime=time;state.expandedDayKey=null;
   if(state.calendarSelectionMode){const mode=state.calendarSelectionMode,editId=state.calendarEditAppointmentId,editKind=state.calendarEditKind;state.calendarSelectionMode=null;state.calendarEditAppointmentId=null;state.calendarEditKind=null;if(editId){openScheduleTimeEditor(editId,key,editKind,time);return;}if(mode==='personal'){openPersonalForm(null,key,time);}else{openNewAppointmentForm();}return;}
   openNewRecordChoiceForSlot(key,time);
 }
@@ -596,7 +604,7 @@ function sendTomorrowReminder(id){const a=currentData().appointments.find(x=>x.i
 function openReceivedLedger(){const start=startOfWeek(state.selectedWeek),end=endOfWeek(state.selectedWeek),pays=currentData().payments.filter(p=>new Date(p.at)>=start&&new Date(p.at)<=end&&!isWalletPayment(p)).sort((a,b)=>new Date(b.at)-new Date(a.at));state.modal=`<div class="modal-head"><div><span class="eyebrow">RECEBIDO</span><h2>Extrato da semana</h2></div><button data-close-modal>×</button></div><div class="received-total">Total: <b>${brl(pays.reduce((s,p)=>s+Number(p.amount),0))}</b></div><div class="simple-list">${pays.length?pays.map(p=>{const a=currentData().appointments.find(x=>x.id===p.appointmentId),c=currentData().clients.find(x=>x.id===a?.clientId);return `<button class="receipt-row" data-payment-edit="${p.id}"><div><strong>${escapeHtml(c?.name||'Cliente')}</strong><span>${escapeHtml(a?.procedureNames?.join(', ')||'Atendimento')} • ${dateWithWeekday(p.at)} • toque para editar</span></div><b>${brl(p.amount)}</b></button>`}).join(''):'<div class="empty">Nenhum recebimento nesta semana.</div>'}</div>`;render();document.querySelectorAll('[data-payment-edit]').forEach(b=>b.onclick=()=>editPaymentRecord(b.dataset.paymentEdit));}
 function editPaymentRecord(id){const p=currentData().payments.find(x=>x.id===id);if(!p)return;const a=currentData().appointments.find(x=>x.id===p.appointmentId);state.modal=`<div class="modal-head"><div><span class="eyebrow">RECEBIMENTO</span><h2>Editar lançamento</h2></div><button data-close-modal>×</button></div><div class="warning">Edite somente para corrigir um recebimento já registrado.</div><label>Valor<input id="editPayAmount" type="number" step="0.01" value="${Number(p.amount).toFixed(2)}"></label><label>Forma<select id="editPayMethod"><option ${p.method==='PIX'?'selected':''}>PIX</option><option ${p.method==='Dinheiro'?'selected':''}>Dinheiro</option><option ${p.method==='Cartão'?'selected':''}>Cartão</option><option ${p.method==='Devolução'?'selected':''}>Devolução</option></select></label><label>Data<input id="editPayDate" type="date" value="${toLocalDateKey(new Date(p.at))}"></label><button class="primary full" id="savePayEdit">Salvar correção</button>`;render();document.querySelector('#savePayEdit').onclick=()=>{const v=Number(document.querySelector('#editPayAmount').value||0);if(!v){alert('Informe um valor válido.');return;}const old=Number(p.amount);p.amount=v;p.method=document.querySelector('#editPayMethod').value;const oldAt=new Date(p.at),date=document.querySelector('#editPayDate').value;p.at=new Date(`${date}T${String(oldAt.getHours()).padStart(2,'0')}:${String(oldAt.getMinutes()).padStart(2,'0')}:00`).toISOString();if(a)addHistory(a,'payment_edited',`Recebimento corrigido: ${brl(old)} → ${brl(v)}`,{paymentId:id});store.save('payment.update',{paymentId:id,amount:v});openReceivedLedger();};}
 function openNewRecordChoiceForSlot(key,time){
-  state.selectedDateKey=key;state.slotPrefillTime=time;
+  state.selectedDateKey=key;state.slotPrefillTime=time;state.expandedDayKey=null;
   state.modal=`<div class="modal-head"><div><span class="eyebrow">${new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})} • ${time}</span><h2>O que deseja adicionar?</h2></div><button data-close-modal>×</button></div><div class="record-choice"><button class="record-service" id="chooseService"><b>Atendimento</b><span>Cliente e procedimento</span></button><button class="record-personal" id="choosePersonal"><b>Particular</b><span>Compromisso pessoal</span></button></div>`;
   render();
   document.querySelector('#chooseService').onclick=()=>{state.modal=null;state.draftAppointment={procedureIds:[],notes:'',totalValue:0,clientId:null,origin:'slot'};openNewAppointmentForm();};
