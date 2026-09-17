@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.12.1-hotfix-appjs';
+const CACHE = 'juliane-boone-v0.1.13';
 const ASSETS = [
   './',
   './index.html',

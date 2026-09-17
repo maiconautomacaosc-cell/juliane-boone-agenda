@@ -50,3 +50,5 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 .day-focus-head .focus-date-title{min-width:0;font-size:12px!important;line-height:1.2!important;color:var(--ink)!important;text-transform:uppercase;white-space:normal;overflow-wrap:normal;word-break:normal}
 .day-focus-head>small{font-size:12px!important;color:var(--muted)!important;font-weight:800!important;white-space:nowrap}
 @media(max-width:380px){.day-focus-head{grid-template-columns:36px 36px minmax(0,1fr) 36px 30px!important;gap:3px!important}.day-focus-head>button{width:34px!important;height:34px!important}.day-focus-head .focus-date-title{font-size:11px!important}}
+/* v0.1.13 - ajustes de fluxo */
+.personal-dashboard-wrap{display:grid;gap:7px}.personal-status-action{width:100%;border:1px solid #d7c4b2;background:#fff7ed;color:#8a5b31;border-radius:13px;padding:9px 12px;font-weight:900}.personal-status-action.done{background:#e8f2ea;color:#3f6c4b;border-color:#cfe1d3}.expense-edit-row{width:100%;border:0;background:transparent;text-align:left}.calendar-selection-close{font-weight:700;line-height:1}.receipt-row{width:100%}
