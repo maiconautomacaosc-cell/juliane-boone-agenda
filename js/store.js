@@ -13,17 +13,42 @@ export class Store {
   }
 
   load(env) {
-    const raw = localStorage.getItem(keyFor(env));
+    const storageKey = keyFor(env);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) {
       const initial = deepClone(INITIAL_STATE);
       initial.settings.environment = env;
-      localStorage.setItem(keyFor(env), JSON.stringify(initial));
+      localStorage.setItem(storageKey, JSON.stringify(initial));
       return initial;
     }
-    const saved = JSON.parse(raw);
-    // Migração não destrutiva: acrescenta novos campos de catálogo sem alterar valores/tempos já personalizados.
-    saved.procedures = (saved.procedures || []).map(p => ({ ...BASE_PROCEDURES.find(b => b.id === p.id), ...p }));
+
+    let saved;
+    try {
+      saved = JSON.parse(raw);
+    } catch (error) {
+      // Preserva uma cópia do conteúdo antigo antes de recuperar o app.
+      try { localStorage.setItem(`${storageKey}.recovery`, raw); } catch (_) {}
+      saved = deepClone(INITIAL_STATE);
+    }
+
+    // Migração defensiva e não destrutiva para versões antigas.
+    saved = saved && typeof saved === 'object' ? saved : {};
+    saved.settings = { ...deepClone(INITIAL_STATE.settings), ...(saved.settings || {}), environment: env };
+    saved.clients = Array.isArray(saved.clients) ? saved.clients : [];
+    saved.appointments = Array.isArray(saved.appointments) ? saved.appointments : [];
+    saved.payments = Array.isArray(saved.payments) ? saved.payments : [];
+    saved.expenses = Array.isArray(saved.expenses) ? saved.expenses : [];
+    saved.audit = Array.isArray(saved.audit) ? saved.audit : [];
+    saved.procedures = Array.isArray(saved.procedures) ? saved.procedures : [];
+    saved.procedures = saved.procedures.map(p => ({ ...(BASE_PROCEDURES.find(b => b.id === p.id) || {}), ...p }));
     BASE_PROCEDURES.forEach(base => { if (!saved.procedures.some(p => p.id === base.id)) saved.procedures.push(deepClone(base)); });
+    saved.clients.forEach(c => {
+      if (!Array.isArray(c.walletTransactions)) c.walletTransactions = [];
+      if (typeof c.walletEnabled !== 'boolean') c.walletEnabled = false;
+    });
+    saved.appointments.forEach(a => { if (!Array.isArray(a.history)) a.history = []; });
+
+    localStorage.setItem(storageKey, JSON.stringify(saved));
     return saved;
   }
 

@@ -54,7 +54,10 @@ const navItems = [
 ];
 
 function registerSW() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js?v=0.1.21', { updateViaCache: 'none' })
+    .then(reg => reg.update().catch(()=>{}))
+    .catch(console.error);
 }
 
 function currentData() { return store.state; }
