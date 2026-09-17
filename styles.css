@@ -54,4 +54,7 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 .personal-dashboard-wrap{display:grid;gap:7px}.personal-status-action{width:100%;border:1px solid #d7c4b2;background:#fff7ed;color:#8a5b31;border-radius:13px;padding:9px 12px;font-weight:900}.personal-status-action.done{background:#e8f2ea;color:#3f6c4b;border-color:#cfe1d3}.expense-edit-row{width:100%;border:0;background:transparent;text-align:left}.calendar-selection-close{font-weight:700;line-height:1}.receipt-row{width:100%}
 
 /* v0.1.14 - destaque financeiro sutil */
-.detail-grid .received-band{padding-top:7px;padding-bottom:7px;margin-top:-4px;margin-bottom:-4px}.detail-grid span.received-band{padding-left:9px;margin-left:-9px;border-radius:10px 0 0 10px}.detail-grid b.received-band{padding-right:9px;margin-right:-9px;border-radius:0 10px 10px 0}.detail-grid .received-pending{background:rgba(246,194,139,.20)}.detail-grid .received-paid{background:rgba(92,157,112,.13)}
+.detail-grid .received-band{padding-top:7px;padding-bottom:7px;margin-top:-4px;margin-bottom:-4px}.detail-grid span.received-band{padding-left:9px;margin-left:-9px;border-radius:10px 0 0 10px}.detail-grid b.received-band{padding-right:9px;margin-right:-9px;border-radius:0 10px 10px 0}.detail-grid .received-pending{background:rgba(255,235,120,.22)}.detail-grid .received-paid{background:rgba(174,235,174,.24)}
+
+/* v0.1.15: linha inteira em verde marca-texto sutil somente quando realizado e pago */
+.appointment-row.realized-paid-row{background:rgba(174,235,174,.24);border-color:rgba(107,176,107,.22)}
