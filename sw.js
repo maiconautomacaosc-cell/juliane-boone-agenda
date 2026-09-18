@@ -1,4 +1,4 @@
-const CACHE = 'juliane-boone-v0.1.30';
+const CACHE = 'juliane-boone-v0.1.31';
 const CORE = ['./index.html','./styles.css','./manifest.webmanifest','./js/app.js','./js/store.js','./js/data.js','./js/utils.js'];
 
 self.addEventListener('install', event => {
