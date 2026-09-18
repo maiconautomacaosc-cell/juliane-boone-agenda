@@ -70,9 +70,29 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 .official-catalog{background:#faf6f0}.official-cover,.official-about,.official-formats,.official-info{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;margin-bottom:16px}.official-cover{min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.official-cover img{max-width:190px;margin-bottom:35px}.official-cover>span{letter-spacing:.2em}.official-cover h1{font-family:Georgia,serif;font-size:38px;font-weight:500;margin:8px 0}.official-cover p{letter-spacing:.12em}.official-about p{margin-top:12px;line-height:1.6}.official-formats>div{display:grid;gap:10px;margin-top:14px}.official-formats article{border:1px solid var(--line);border-radius:16px;padding:14px}.official-formats article p{margin-top:6px;color:var(--muted);line-height:1.45}.official-services-title{text-align:center;text-transform:uppercase;margin:24px 0 14px}.official-info{display:grid;gap:16px}.official-info article{text-align:center}.official-info p{margin-top:7px;line-height:1.5;color:var(--muted)}
 @media print{.public-actions,.catalog-whatsapp,.bottom-nav,.topbar{display:none!important}.public-catalog{max-width:100%!important;padding:0!important}.portfolio-card{break-inside:avoid}.official-cover,.official-about,.official-formats,.official-info{box-shadow:none;break-inside:avoid}}
 
-/* v0.1.27 — visão mensal: dias centralizados e marcadores por estado */
-.day-cell{display:grid;place-items:center;text-align:center}
-.day-number{position:relative;z-index:1;display:block;text-align:center}
-.month-status-dots{left:50%;transform:translateX(-50%);bottom:9px;justify-content:center}
-.status-dot.ongoing{background:#B7834E}
-.status-dot.completed{background:#6D5239}
+/* v0.1.27 — consolidação da rodada posterior à v0.1.26 */
+:root{--status-realized:#6f482d;--status-ongoing:#b6814f;--status-awaiting:#e1b84f}
+/* Agenda semanal e dia ampliado: status operacional, independente de pagamento/sinal */
+.timeline-block.completed,.focus-block.completed{background:var(--status-realized);color:#fff}
+.timeline-block.service,.focus-block.service{background:var(--status-ongoing);color:#fff}
+.timeline-block.awaiting,.focus-block.awaiting{background:var(--status-awaiting);color:#2b2417}
+/* Mensal: mostra somente os estados realmente existentes no dia */
+.status-dot.awaiting{background:var(--status-awaiting)}
+.status-dot.ongoing{background:var(--status-ongoing)}
+.status-dot.completed{background:var(--status-realized)}
+.status-dot.personal{background:var(--personal)}
+.day-cell{display:flex;align-items:center;justify-content:center;text-align:center}
+.day-number{display:grid;place-items:center;width:100%;height:100%}
+/* Cards financeiros: recebido em marrom escuro e a receber em marrom claro */
+.finance-received-card{background:var(--status-realized);border-color:var(--status-realized);color:#fff}
+.finance-received-card span,.finance-received-card small{color:rgba(255,255,255,.82)}
+.finance-receivable-card{background:#ead4bd;border-color:#d5b38f;color:#33271f}
+.finance-receivable-card span,.finance-receivable-card small{color:#6f5b4b}
+/* A lista do Painel não usa mais o preenchimento verde introduzido na v0.1.26 */
+.appointment-row.realized-paid-row{background:#fff;border-color:var(--line)}
+/* Bloqueio de função: preto no conjunto e caixa interna em cinza-escuro */
+.blocked-action{background:#111;color:#fff;border:1px solid #2f2f2f}
+.blocked-action span{background:#292929;color:#e0e0e0;border-radius:10px;padding:9px 10px;margin-top:3px}
+/* Catálogo online: aproxima o visual do PDF original sem transformar o PDF em imagem fixa. */
+.official-catalog,.public-catalog{background-color:#fbf8f3;background-image:radial-gradient(circle at 18% 14%,rgba(205,166,126,.12),transparent 22%),radial-gradient(circle at 82% 46%,rgba(196,157,116,.10),transparent 24%),linear-gradient(118deg,rgba(255,255,255,.72),rgba(244,237,229,.50) 48%,rgba(255,255,255,.82));background-attachment:fixed}
+.official-cover,.official-about,.official-formats,.official-info,.portfolio-card{background:rgba(255,255,255,.88);backdrop-filter:blur(2px)}
