@@ -69,3 +69,10 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 @media(max-width:430px){.agenda-title-main{font-size:32px}.agenda-title-sub{font-size:14px}}
 .official-catalog{background:#faf6f0}.official-cover,.official-about,.official-formats,.official-info{background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;margin-bottom:16px}.official-cover{min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.official-cover img{max-width:190px;margin-bottom:35px}.official-cover>span{letter-spacing:.2em}.official-cover h1{font-family:Georgia,serif;font-size:38px;font-weight:500;margin:8px 0}.official-cover p{letter-spacing:.12em}.official-about p{margin-top:12px;line-height:1.6}.official-formats>div{display:grid;gap:10px;margin-top:14px}.official-formats article{border:1px solid var(--line);border-radius:16px;padding:14px}.official-formats article p{margin-top:6px;color:var(--muted);line-height:1.45}.official-services-title{text-align:center;text-transform:uppercase;margin:24px 0 14px}.official-info{display:grid;gap:16px}.official-info article{text-align:center}.official-info p{margin-top:7px;line-height:1.5;color:var(--muted)}
 @media print{.public-actions,.catalog-whatsapp,.bottom-nav,.topbar{display:none!important}.public-catalog{max-width:100%!important;padding:0!important}.portfolio-card{break-inside:avoid}.official-cover,.official-about,.official-formats,.official-info{box-shadow:none;break-inside:avoid}}
+
+/* v0.1.27 — visão mensal: dias centralizados e marcadores por estado */
+.day-cell{display:grid;place-items:center;text-align:center}
+.day-number{position:relative;z-index:1;display:block;text-align:center}
+.month-status-dots{left:50%;transform:translateX(-50%);bottom:9px;justify-content:center}
+.status-dot.ongoing{background:#B7834E}
+.status-dot.completed{background:#6D5239}
