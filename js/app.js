@@ -47,6 +47,7 @@ const PERSONAL_TYPES = ['AZAF - Reunião geral','AZAF - Reunião ADM','AZAF - En
 let navigationStack = ['dashboard'];
 let pendingConfirmAction = null;
 let pendingCancelAction = null;
+let pendingAlertCloseAction = null;
 
 const navItems = [
   ['dashboard', 'Painel', '⌂'],
@@ -56,7 +57,8 @@ const navItems = [
   ['catalog', 'Catálogo', '▦']
 ];
 
-function alert(message){
+function alert(message,onClose=null){
+  pendingAlertCloseAction = typeof onClose === 'function' ? onClose : null;
   state.alertReturnModal=state.modal;
   state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Aviso</h2></div><button data-alert-close>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><button class="primary full" id="appAlertOk">OK</button>`;
   render();
@@ -69,7 +71,7 @@ function confirmDialog(message,onConfirm,onCancel=null){
 }
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.30', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.31', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -392,7 +394,7 @@ function bind() {
   document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{state.dashboardPeriod=b.dataset.period;render();});
   document.querySelector('#shareCatalog')?.addEventListener('click', shareCatalog);document.querySelector('#previewOfficialCatalog')?.addEventListener('click',()=>{window.open(`${location.pathname}?catalogo=1`,'_blank');});
   document.querySelector('#resetSandbox')?.addEventListener('click',()=>confirmDialog('Resetar todos os dados do Sandbox?',()=>{store.resetSandbox();state.modal=null;state.alertReturnModal=null;state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();setTimeout(()=>location.reload(),50);}));
-  const closeAlert=()=>{state.modal=state.alertReturnModal||null;state.alertReturnModal=null;render();};
+  const closeAlert=()=>{const action=pendingAlertCloseAction;pendingAlertCloseAction=null;if(action){state.alertReturnModal=null;action();return;}state.modal=state.alertReturnModal||null;state.alertReturnModal=null;render();};
   document.querySelector('#appAlertOk')?.addEventListener('click',closeAlert);
   document.querySelectorAll('[data-alert-close]').forEach(b=>b.onclick=closeAlert);
   document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{pendingConfirmAction=null;pendingCancelAction=null;state.alertReturnModal=null;state.modal=null;if(state.calendarSelectionMode){state.view='calendar';}render();});
@@ -470,6 +472,7 @@ function startAppointmentFlow(clientId=null, origin='new', debtDecision=null) {
 function openNewAppointmentForm() {
   const clients=currentData().clients, procs=currentData().procedures.filter(p=>p.active);
   const preClient=state.draftAppointment?.clientId||'';
+  const savedDraft=state.draftAppointment?.formSnapshot||null;
   const cycle=preClient?maintenanceCount(preClient):0;
   state.modal=`<div class="modal-head"><div><span class="eyebrow">NOVO AGENDAMENTO</span><h2>${dateWithWeekday(state.selectedDateKey+'T12:00:00')}</h2></div><button data-close-modal>×</button></div>
   <label>Cliente<select id="apptClient"><option value="">Selecione</option>${clients.map(c=>`<option value="${c.id}" ${c.id===preClient?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select></label>
@@ -477,12 +480,12 @@ function openNewAppointmentForm() {
   ${cycle>=2?`<div class="cycle-alert"><b>${cycle} manutenções desde a última aplicação.</b><span>Avaliar necessidade de nova aplicação.</span></div>`:''}
   ${state.draftAppointment?.carryOver?`<div class="warning"><b>Saldo anterior transferido: ${brl(state.draftAppointment.carryOver.total)}</b><br>Será somado ao novo atendimento e ficará discriminado no histórico.</div>`:''}
   ${state.selectionOrigin==='maintenance'?`<label class="check-row new-application-choice"><input type="checkbox" id="newApplicationChoice"><span><b>Nova aplicação</b><small>Marque se será necessário remover/refazer tudo.</small></span></label>`:''}
-  <fieldset><legend>Procedimentos</legend>${procs.map(p=>`<div class="procedure-choice"><label class="check-row"><input type="checkbox" value="${p.id}" class="proc-check" ${(state.selectionOrigin==='maintenance'&&p.id==='manutencao')?'checked':''}><span>${escapeHtml(p.name)}</span><b>${brl(p.value)}</b></label>${p.id==='reposicao-quebrada'?`<div class="qty-control" data-qty-wrap="${p.id}"><button type="button" data-qty-minus="${p.id}">−</button><strong data-qty="${p.id}">1</strong><button type="button" data-qty-plus="${p.id}">+</button><small>unidade(s)</small></div>`:''}</div>`).join('')}</fieldset>
+  <fieldset><legend>Procedimentos</legend>${procs.map(p=>`<div class="procedure-choice"><label class="check-row"><input type="checkbox" value="${p.id}" class="proc-check" ${savedDraft?.procIds?.includes(p.id)||(!savedDraft&&state.selectionOrigin==='maintenance'&&p.id==='manutencao')?'checked':''}><span>${escapeHtml(p.name)}</span><b>${brl(p.value)}</b></label>${p.id==='reposicao-quebrada'?`<div class="qty-control" data-qty-wrap="${p.id}"><button type="button" data-qty-minus="${p.id}">−</button><strong data-qty="${p.id}">1</strong><button type="button" data-qty-plus="${p.id}">+</button><small>unidade(s)</small></div>`:''}</div>`).join('')}</fieldset>
   <button class="secondary full compact" type="button" id="addAppointmentExtra">+ Adicionar extra</button>
   <div id="appointmentExtras"></div>
-  <div class="two-col"><label>Início<input type="time" id="apptStart" value="${state.slotPrefillTime||'09:00'}" step="60"></label><label>Fim<input type="time" id="apptEnd" value="${state.slotPrefillTime||'09:00'}" step="60"></label></div>
-  <label>Valor do atendimento<input type="number" id="apptValue" step="0.01" value="0"></label>
-  <label>Anotações (opcional)<textarea id="apptNotes"></textarea></label>
+  <div class="two-col"><label>Início<input type="time" id="apptStart" value="${savedDraft?.start||state.slotPrefillTime||'09:00'}" step="60"></label><label>Fim<input type="time" id="apptEnd" value="${savedDraft?.end||state.slotPrefillTime||'09:00'}" step="60"></label></div>
+  <label>Valor do atendimento<input type="number" id="apptValue" step="0.01" value="${savedDraft?.value??0}"></label>
+  <label>Anotações (opcional)<textarea id="apptNotes">${escapeHtml(savedDraft?.notes||'')}</textarea></label>
   <button class="primary full" id="saveAppointment">Confirmar agendamento</button>`;
   render();
   const qtyFor=id=>Number(document.querySelector(`[data-qty="${id}"]`)?.textContent||1);const readExtras=()=>[...document.querySelectorAll('[data-appointment-extra]')].map(row=>({description:row.querySelector('[data-extra-description]')?.value.trim()||'',value:Number(row.querySelector('[data-extra-value]')?.value||0)})).filter(x=>x.description||x.value>0);const refreshCalc=()=>{const selected=[...document.querySelectorAll('.proc-check:checked')].map(x=>currentData().procedures.find(p=>p.id===x.value));const extras=readExtras(),serviceTotal=selected.reduce((s,p)=>s+Number(p.value||0)*(p.id==='reposicao-quebrada'?qtyFor(p.id):1),0)+extras.reduce((s,x)=>s+Number(x.value||0),0),total=serviceTotal+Number(state.draftAppointment?.carryOver?.total||0),mins=selected.reduce((s,p)=>s+Number(p.durationMin||0)*(p.id==='reposicao-quebrada'?qtyFor(p.id):1),0);document.querySelector('#apptValue').value=total.toFixed(2);const startVal=document.querySelector('#apptStart').value||'09:00';const d=new Date(`${state.selectedDateKey}T${startVal}:00`),e=addMinutes(d,mins);document.querySelector('#apptEnd').value=`${String(e.getHours()).padStart(2,'0')}:${String(e.getMinutes()).padStart(2,'0')}`;};
@@ -491,7 +494,14 @@ function openNewAppointmentForm() {
   document.querySelector('#newClientFromAppointment').onclick=()=>addClient('appointment');
   document.querySelectorAll('.proc-check').forEach(x=>x.onchange=refreshCalc);document.querySelectorAll('[data-qty-plus]').forEach(b=>b.onclick=()=>{const q=document.querySelector(`[data-qty="${b.dataset.qtyPlus}"]`);q.textContent=Number(q.textContent)+1;refreshCalc();});document.querySelectorAll('[data-qty-minus]').forEach(b=>b.onclick=()=>{const q=document.querySelector(`[data-qty="${b.dataset.qtyMinus}"]`);q.textContent=Math.max(1,Number(q.textContent)-1);refreshCalc();});document.querySelector('#apptStart').onchange=refreshCalc;
   document.querySelector('#newApplicationChoice')?.addEventListener('change',e=>{const m=document.querySelector('.proc-check[value="manutencao"]'),a=document.querySelector('.proc-check[value="alongamento"]');if(e.target.checked){if(m)m.checked=false;if(a)a.checked=true;}else{if(a)a.checked=false;if(m)m.checked=true;}refreshCalc();});
-  document.querySelector('#saveAppointment').onclick=saveAppointment;refreshCalc();
+  document.querySelector('#saveAppointment').onclick=saveAppointment;
+  if(savedDraft){
+    document.querySelector('#apptClient').value=savedDraft.clientId||'';
+    for(const [id,qty] of Object.entries(savedDraft.quantities||{})){const q=document.querySelector(`[data-qty="${id}"]`);if(q)q.textContent=String(qty);}
+    if(savedDraft.newApplication&&document.querySelector('#newApplicationChoice'))document.querySelector('#newApplicationChoice').checked=true;
+    for(const extra of savedDraft.extras||[]){addExtraRow();const row=document.querySelector('#appointmentExtras [data-appointment-extra]:last-child');if(row){row.querySelector('[data-extra-description]').value=extra.description||'';row.querySelector('[data-extra-value]').value=extra.value||'';}}
+    document.querySelector('#apptStart').value=savedDraft.start||'09:00';document.querySelector('#apptEnd').value=savedDraft.end||'09:00';document.querySelector('#apptValue').value=String(savedDraft.value??0);document.querySelector('#apptNotes').value=savedDraft.notes||'';
+  } else refreshCalc();
 }
 
 function saveAppointment() {
@@ -500,7 +510,12 @@ function saveAppointment() {
   const startTime=document.querySelector('#apptStart').value,endTime=document.querySelector('#apptEnd').value,start=new Date(`${state.selectedDateKey}T${startTime}:00`);let end=new Date(`${state.selectedDateKey}T${endTime}:00`);if(end<=start)end.setDate(end.getDate()+1);
   const procedureItems=[...procIds.map(id=>{const p=currentData().procedures.find(x=>x.id===id),qty=id==='reposicao-quebrada'?Number(document.querySelector(`[data-qty="${id}"]`)?.textContent||1):1;return {id,name:p.name,qty,unitValue:Number(p.value),value:Number(p.value)*qty,durationMin:Number(p.durationMin)*qty};}),...extraItems];
   const appointment={id:uid('appt'),clientId,type:'service',procedureIds:procIds,procedureItems,procedureNames:procedureItems.map(i=>i.qty>1?`${i.name} ×${i.qty}`:i.name),start:start.toISOString(),end:end.toISOString(),totalValue:Number(document.querySelector('#apptValue').value||0),notes:document.querySelector('#apptNotes').value,carryOver:state.draftAppointment?.carryOver||null,status:'awaiting_confirmation',createdAt:new Date().toISOString(),history:[]};
-  const conflict=hasConflict(appointment);if(conflict){const cc=currentData().clients.find(c=>c.id===conflict.clientId);alert(`Horário indisponível. Já existe ${cc?.name||conflict.personalKind||'um compromisso'} das ${fmtTime(conflict.start)} às ${fmtTime(conflict.end)}.`);return;}
+  const conflict=hasConflict(appointment);if(conflict){
+    const cc=currentData().clients.find(c=>c.id===conflict.clientId);
+    state.draftAppointment={...(state.draftAppointment||{}),clientId,formSnapshot:{clientId,procIds:[...procIds],quantities:Object.fromEntries(procIds.map(id=>[id,id==='reposicao-quebrada'?Number(document.querySelector(`[data-qty="${id}"]`)?.textContent||1):1])),extras:extraRows.map(row=>({description:row.querySelector('[data-extra-description]')?.value.trim()||'',value:row.querySelector('[data-extra-value]')?.value||''})),start:startTime,end:endTime,value:document.querySelector('#apptValue').value,notes:document.querySelector('#apptNotes').value,newApplication:!!document.querySelector('#newApplicationChoice')?.checked}};
+    alert(`Horário indisponível. Já existe ${cc?.name||conflict.personalKind||'um compromisso'} das ${fmtTime(conflict.start)} às ${fmtTime(conflict.end)}.`,()=>openNewAppointmentForm());return;
+  }
+  state.draftAppointment.formSnapshot=null;
   if(appointment.carryOver?.items?.length){for(const item of appointment.carryOver.items){const src=currentData().appointments.find(x=>x.id===item.appointmentId);if(src){src.transferredOut=Number(src.transferredOut||0)+Number(item.amount||0);src.transferredTo=appointment.id;addHistory(src,'balance_transferred',`Saldo ${brl(item.amount)} transferido para novo atendimento`,{toAppointmentId:appointment.id});}}addHistory(appointment,'balance_carried',`Saldo anterior transferido: ${brl(appointment.carryOver.total)}`);}addHistory(appointment,'reserved','Horário reservado aguardando confirmação');finalizeAppointment(appointment,0,'',false);
 }
 
