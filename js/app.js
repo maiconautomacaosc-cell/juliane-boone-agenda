@@ -44,6 +44,8 @@ const PIX_KEY = '029.090.202-90';
 const PIX_NAME = 'Juliane de Souza B. Bentes';
 const PERSONAL_TYPES = ['AZAF - Reunião geral','AZAF - Reunião ADM','AZAF - Ensaio extra','AZAF - Evento','MORIAH - Ensaio Geral','MORIAH - Reunião Geral','MORIAH - Evento','GP CASAIS - Ensaio extra','GP CASAIS - Evento','Consulta médica','Cuidado pessoal','Outros'];
 let navigationStack = ['dashboard'];
+let pendingConfirmAction = null;
+let pendingCancelAction = null;
 
 const navItems = [
   ['dashboard', 'Painel', '⌂'],
@@ -57,11 +59,14 @@ function alert(message){
   state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Aviso</h2></div><button data-close-modal>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><button class="primary full" id="appAlertOk">OK</button>`;render();document.querySelector('#appAlertOk')?.addEventListener('click',()=>{state.modal=null;render();});
 }
 function confirmDialog(message,onConfirm,onCancel=null){
-  state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Confirmar</h2></div><button data-close-modal>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><div class="action-pair"><button class="secondary" id="appConfirmCancel">Cancelar</button><button class="primary" id="appConfirmOk">Continuar</button></div>`;render();document.querySelector('#appConfirmOk').onclick=()=>onConfirm?.();document.querySelector('#appConfirmCancel').onclick=()=>{if(onCancel)onCancel();else{state.modal=null;render();}};
+  pendingConfirmAction = typeof onConfirm === 'function' ? onConfirm : null;
+  pendingCancelAction = typeof onCancel === 'function' ? onCancel : null;
+  state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Confirmar</h2></div><button data-close-modal>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><div class="action-pair"><button type="button" class="secondary" id="appConfirmCancel">Cancelar</button><button type="button" class="primary" id="appConfirmOk">Continuar</button></div>`;
+  render();
 }
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.25', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.29', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -337,6 +342,8 @@ function render() {
 }
 
 function bind() {
+  document.querySelector('#appConfirmOk')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();const action=pendingConfirmAction;pendingConfirmAction=null;pendingCancelAction=null;if(action)action();});
+  document.querySelector('#appConfirmCancel')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();const action=pendingCancelAction;pendingConfirmAction=null;pendingCancelAction=null;if(action)action();else{state.modal=null;render();}});
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>goView(b.dataset.view));
   document.querySelector('#adminBtn')?.addEventListener('click',()=>goView('admin'));
   document.querySelector('#topBack')?.addEventListener('click',goBack);
@@ -382,7 +389,7 @@ function bind() {
   document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{state.dashboardPeriod=b.dataset.period;render();});
   document.querySelector('#shareCatalog')?.addEventListener('click', shareCatalog);document.querySelector('#previewOfficialCatalog')?.addEventListener('click',()=>{window.open(`${location.pathname}?catalogo=1`,'_blank');});
   document.querySelector('#resetSandbox')?.addEventListener('click',()=>confirmDialog('Resetar todos os dados do Sandbox?',()=>{store.resetSandbox();render();}));
-  document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{state.modal=null;if(state.calendarSelectionMode){state.view='calendar';}render();});
+  document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{pendingConfirmAction=null;pendingCancelAction=null;state.modal=null;if(state.calendarSelectionMode){state.view='calendar';}render();});
 }
 
 
