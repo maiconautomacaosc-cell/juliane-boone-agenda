@@ -20,6 +20,7 @@ const state = {
   selectedDateKey: null,
   slotPrefillTime: null,
   modal: null,
+  alertReturnModal: null,
   draftAppointment: null,
   calendarSelectionMode: null,
   calendarEditAppointmentId: null,
@@ -56,7 +57,9 @@ const navItems = [
 ];
 
 function alert(message){
-  state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Aviso</h2></div><button data-close-modal>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><button class="primary full" id="appAlertOk">OK</button>`;render();document.querySelector('#appAlertOk')?.addEventListener('click',()=>{state.modal=null;render();});
+  state.alertReturnModal=state.modal;
+  state.modal=`<div class="modal-head"><div><span class="eyebrow">AGENDA JULIANE</span><h2>Aviso</h2></div><button data-alert-close>×</button></div><div class="app-alert-message">${escapeHtml(String(message)).replace(/\n/g,'<br>')}</div><button class="primary full" id="appAlertOk">OK</button>`;
+  render();
 }
 function confirmDialog(message,onConfirm,onCancel=null){
   pendingConfirmAction = typeof onConfirm === 'function' ? onConfirm : null;
@@ -66,7 +69,7 @@ function confirmDialog(message,onConfirm,onCancel=null){
 }
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.29', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.30', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -342,14 +345,14 @@ function render() {
 }
 
 function bind() {
-  document.querySelector('#appConfirmOk')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();const action=pendingConfirmAction;pendingConfirmAction=null;pendingCancelAction=null;if(action)action();});
+  document.querySelector('#appConfirmOk')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();const action=pendingConfirmAction;pendingConfirmAction=null;pendingCancelAction=null;state.modal=null;if(action)action();else render();});
   document.querySelector('#appConfirmCancel')?.addEventListener('click',(e)=>{e.preventDefault();e.stopPropagation();const action=pendingCancelAction;pendingConfirmAction=null;pendingCancelAction=null;if(action)action();else{state.modal=null;render();}});
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>goView(b.dataset.view));
   document.querySelector('#adminBtn')?.addEventListener('click',()=>goView('admin'));
   document.querySelector('#topBack')?.addEventListener('click',goBack);
   document.querySelector('#envSwitch')?.addEventListener('click',()=>{
     const next = store.environment==='official'?'sandbox':'official';
-    confirmDialog(`Entrar no ambiente ${next==='sandbox'?'de TESTES':'OFICIAL'}?`,()=>{store.switchEnvironment(next);state.view='dashboard';navigationStack=['dashboard'];render();});
+    confirmDialog(`Entrar no ambiente ${next==='sandbox'?'de TESTES':'OFICIAL'}?`,()=>{store.switchEnvironment(next);state.modal=null;state.alertReturnModal=null;state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();});
   });
   document.querySelector('#newAppointment')?.addEventListener('click', openNewRecordChoice);
   document.querySelector('#prevWeek')?.addEventListener('click',()=>{state.selectedWeek=new Date(state.selectedWeek);state.selectedWeek.setDate(state.selectedWeek.getDate()-(state.dashboardPeriod==='month'?30:7));render();});
@@ -388,8 +391,11 @@ function bind() {
   document.querySelectorAll('[data-dashboard-tab]').forEach(b=>b.onclick=()=>{state.dashboardTab=b.dataset.dashboardTab;render();});
   document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{state.dashboardPeriod=b.dataset.period;render();});
   document.querySelector('#shareCatalog')?.addEventListener('click', shareCatalog);document.querySelector('#previewOfficialCatalog')?.addEventListener('click',()=>{window.open(`${location.pathname}?catalogo=1`,'_blank');});
-  document.querySelector('#resetSandbox')?.addEventListener('click',()=>confirmDialog('Resetar todos os dados do Sandbox?',()=>{store.resetSandbox();render();}));
-  document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{pendingConfirmAction=null;pendingCancelAction=null;state.modal=null;if(state.calendarSelectionMode){state.view='calendar';}render();});
+  document.querySelector('#resetSandbox')?.addEventListener('click',()=>confirmDialog('Resetar todos os dados do Sandbox?',()=>{store.resetSandbox();state.modal=null;state.alertReturnModal=null;state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();setTimeout(()=>location.reload(),50);}));
+  const closeAlert=()=>{state.modal=state.alertReturnModal||null;state.alertReturnModal=null;render();};
+  document.querySelector('#appAlertOk')?.addEventListener('click',closeAlert);
+  document.querySelectorAll('[data-alert-close]').forEach(b=>b.onclick=closeAlert);
+  document.querySelectorAll('[data-close-modal]').forEach(b=>b.onclick=()=>{pendingConfirmAction=null;pendingCancelAction=null;state.alertReturnModal=null;state.modal=null;if(state.calendarSelectionMode){state.view='calendar';}render();});
 }
 
 
