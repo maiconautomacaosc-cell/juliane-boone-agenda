@@ -71,7 +71,7 @@ function confirmDialog(message,onConfirm,onCancel=null){
 }
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.38', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.39', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -343,7 +343,40 @@ function renderModal() {
 
 function ensureRuntimeStyles(){if(document.querySelector('#jb-v0134-styles'))return;const st=document.createElement('style');st.id='jb-v0134-styles';st.textContent=`.appointment-row.realized-paid-row{background:#e6f3e9!important;border-color:#c7dfcc!important}.appointment-row .payment-state.financial-pending{background:#f7d9d5!important;color:#9b3f36!important;border-color:#e8b6b0!important}.appointment-row.realized-paid-row .payment-state{background:#d6eadb!important;color:#3f7650!important}`;document.head.appendChild(st);}
 
+const OFFICIAL_CLIENT_IMPORT_V0139 = [
+  ['Mana ❤️❤️','+55 47 98908-5780'],
+  ['Amanda Siqueira 💋','+55 47 99759-9150'],
+  ['Clara Marcia','+55 92 98101-9401'],
+  ['Mayara Gouveia ✨','+55 47 98495-4626'],
+  ['Diene Florêncio','+55 47 99989-8718'],
+  ['Eloo','+55 47 99706-1512'],
+  ['Carol','+55 41 99725-5899'],
+  ['Danie Dutra','+55 47 99904-8551'],
+  ['Veronica angelo','+55 11 99884-0327'],
+  ['Nivia Posto Xv','+55 47 98907-6277'],
+  ['Maria Eduarda P','+55 47 98813-3250'],
+  ['Ana Carolina','+55 47 99615-6614']
+];
+function ensureOfficialClientImportV0139(){
+  if(store.environment!=='official')return;
+  const data=currentData();
+  data.migrations=data.migrations||{};
+  if(data.migrations.clientsImportV0139)return;
+  const digits=v=>String(v||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');
+  const existing=new Set((data.clients||[]).map(c=>digits(c.whatsapp)).filter(Boolean));
+  let added=0;
+  for(const [name,whatsapp] of OFFICIAL_CLIENT_IMPORT_V0139){
+    const phone=digits(whatsapp);
+    if(existing.has(phone))continue;
+    data.clients.push({id:uid('client'),name,whatsapp,notes:'',walletEnabled:false,walletTransactions:[],createdAt:new Date().toISOString()});
+    existing.add(phone);added++;
+  }
+  data.migrations.clientsImportV0139={at:new Date().toISOString(),added};
+  store.save('migration.clients.v0.1.39',{added});
+}
+
 function render() {
+  ensureOfficialClientImportV0139();
   ensureRuntimeStyles();
   if (new URLSearchParams(window.location.search).get('catalogo')==='1') { renderPublicCatalog(); return; }
   document.body.classList.toggle('calendar-choice-mode',!!state.calendarSelectionMode);
