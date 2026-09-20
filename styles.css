@@ -114,3 +114,15 @@ body.calendar-choice-mode{background:#d8d2cb}body.calendar-choice-mode .topbar,b
 .payment-summary span.received-band{padding-left:9px;margin-left:-9px;border-radius:10px 0 0 10px}
 .payment-summary b.received-band{padding-right:9px;margin-right:-9px;border-radius:0 10px 10px 0}
 .received-summary{background:rgba(255,235,120,.22)!important}
+
+
+/* v0.1.37 — acabamento visual do cabeçalho e manutenção */
+.topbar{min-height:80px}
+.brand-wrap{position:relative;flex:1;min-width:0;height:58px;justify-content:center;padding-left:44px;padding-right:8px;overflow:visible}
+.brand-logo-header{width:min(100%,220px);height:54px;max-width:220px;object-fit:contain;object-position:center}
+.top-back{position:absolute;left:0;top:50%;transform:translateY(-50%);width:44px;height:44px;padding:0;border:1px solid rgba(165,117,72,.20);border-radius:50%;background:rgba(255,255,255,.92);color:#5f4938;font-size:31px;line-height:1;display:grid;place-items:center;box-shadow:0 5px 14px rgba(52,37,24,.10);z-index:2}
+.top-back:active{transform:translateY(-50%) scale(.96)}
+.maintenance-setting>span{display:block;min-width:0}
+.maintenance-setting>span>b{display:block;line-height:1.25}
+.maintenance-setting>span>small{display:block;margin-top:5px;color:var(--muted);font-weight:600;line-height:1.3}
+@media(max-width:430px){.topbar{padding-left:12px;padding-right:12px}.brand-wrap{padding-left:42px;padding-right:4px}.brand-logo-header{width:min(100%,190px);max-width:190px;height:50px}.top-actions{gap:6px}.top-back{width:42px;height:42px}}
