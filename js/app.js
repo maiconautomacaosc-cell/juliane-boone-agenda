@@ -71,7 +71,7 @@ function confirmDialog(message,onConfirm,onCancel=null){
 }
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js?v=0.1.33', { updateViaCache: 'none' })
+  navigator.serviceWorker.register('./sw.js?v=0.1.38', { updateViaCache: 'none' })
     .then(reg => reg.update().catch(()=>{}))
     .catch(console.error);
 }
@@ -713,5 +713,18 @@ function openCompletionNext(id){const a=currentData().appointments.find(x=>x.id=
 
 async function sharePostCare(id){const a=currentData().appointments.find(x=>x.id===id),c=currentData().clients.find(x=>x.id===a.clientId),text=`Oi, ${c?.name||''}! 💅 Seguem os cuidados pós-atendimento para conservar seu alongamento/manutenção. Qualquer dúvida, estou à disposição. ❤️`;const ok=await shareAssetWithText(POST_CARE_PDF,'cuidados-pos-atendimento-juliane-boone.pdf','application/pdf',text);if(ok)markMessageSent(a,'post_care');}
 history.replaceState({juliane:true},'');history.pushState({juliane:true},'');window.addEventListener('popstate',()=>{if(state.view!=='dashboard'||state.modal||state.calendarSelectionMode){history.pushState({juliane:true},'');goBack();}});
+
+function playOpeningSplash(){
+  if(document.querySelector('.opening-splash')) return;
+  const splash=document.createElement('div');
+  splash.className='opening-splash';
+  splash.setAttribute('aria-hidden','true');
+  splash.innerHTML=`<div class="splash-glow"></div><div class="splash-ring ring-one"></div><div class="splash-ring ring-two"></div><div class="splash-sparkles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="splash-center"><img src="./assets/logo-header-juliane-boone.png" alt=""><div class="splash-tagline">BELEZA<br>QUE REALÇA<br>VOCÊ</div><div class="splash-heart">♥</div></div>`;
+  document.body.appendChild(splash);
+  window.setTimeout(()=>splash.classList.add('splash-leaving'),1850);
+  window.setTimeout(()=>splash.remove(),2350);
+}
+
 registerSW();
 render();
+playOpeningSplash();
