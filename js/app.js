@@ -128,7 +128,7 @@ function header() {
   return `
     <header class="topbar ${sandbox ? 'sandbox' : ''}">
       <div class="brand-wrap">${state.view!=='dashboard' ? '<button class="top-back" id="topBack" aria-label="Voltar">‹</button>' : ''}
-        <img src="./assets/logo-juliane-boone.png" class="brand-logo" alt="Juliane Boone Nail Designer" />
+        <img src="./assets/logo-header-juliane-boone.png" class="brand-logo brand-logo-header" alt="Juliane Boone Nail Designer" />
       </div>
       <div class="top-actions">
         <button class="chip ${sandbox ? 'active' : ''}" id="envSwitch">${sandbox ? 'TESTE' : 'OFICIAL'}</button>
