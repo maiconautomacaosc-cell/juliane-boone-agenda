@@ -41,6 +41,7 @@ const STUDIO_ADDRESS = 'Rua Adriano Schondermank, 279, Costa e Silva, Joinville 
 const BOOKING_RULES_IMAGE = './assets/informacoes-agendamento.jpg';
 const POST_CARE_PDF = './assets/cuidados-pos-atendimento.pdf';
 const PUBLIC_CATALOG_SHORT_URL = 'https://tinyurl.com/Catalogojulianenail';
+const STUDIO_INSTAGRAM_URL = 'https://www.instagram.com/julianeboonenailsjoinville?stkn=MW5sbXRnbm5pZGszOA==';
 const PIX_KEY = '029.090.202-90';
 const PIX_NAME = 'Juliane de Souza B. Bentes';
 const PERSONAL_TYPES = ['AZAF - Reunião geral','AZAF - Reunião ADM','AZAF - Ensaio extra','AZAF - Evento','MORIAH - Ensaio Geral','MORIAH - Reunião Geral','MORIAH - Evento','GP CASAIS - Ensaio extra','GP CASAIS - Evento','Consulta médica','Cuidado pessoal','Outros'];
@@ -97,7 +98,7 @@ function markMessageSent(a,type){if(!a)return;a.messageLog=a.messageLog||{};cons
 function procedureRequiresMaintenance(id){return !!currentData().procedures.find(p=>p.id===id)?.requiresMaintenance;}
 function appointmentRequiresMaintenance(a){if(typeof a?.requiresMaintenance==='boolean')return a.requiresMaintenance;return (a?.procedureIds||[]).some(procedureRequiresMaintenance);}
 function maintenanceCount(clientId){let n=0;const aps=currentData().appointments.filter(a=>a.clientId===clientId&&a.status!=='cancelled').sort((a,b)=>new Date(a.start)-new Date(b.start));for(const a of aps){if(a.procedureIds?.includes('alongamento')) n=0; if(a.procedureIds?.includes('manutencao')) n++;}return n;}
-function hasConflict(candidate,ignoreId=null){const s=new Date(candidate.start),e=new Date(candidate.end);return currentData().appointments.find(a=>a.id!==ignoreId&&a.status!=='cancelled'&&new Date(a.start)<e&&new Date(a.end)>s);}
+function hasConflict(candidate,ignoreId=null){return null;}
 function goView(view,push=true){if(push&&state.view!==view)navigationStack.push(view);state.view=view;state.modal=null;state.calendarSelectionMode=null;render();}
 function goBack(){if(state.modal){state.modal=null;render();return;}if(state.calendarSelectionMode){state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();return;}if(state.view!=='dashboard'){navigationStack.pop();state.view=navigationStack[navigationStack.length-1]||'dashboard';render();return;}history.back();}
 
@@ -133,17 +134,14 @@ function weekLabel(d) {
 }
 
 function header() {
-  const sandbox = store.environment === 'sandbox';
   return `
-    <header class="topbar ${sandbox ? 'sandbox' : ''}">
+    <header class="topbar">
       <div class="brand-wrap">${state.view!=='dashboard' ? '<button class="top-back" id="topBack" aria-label="Voltar">‹</button>' : ''}
         <img src="./assets/logo-header-juliane-boone.png" class="brand-logo brand-logo-header" alt="Juliane Boone Nail Designer" />
       </div>
       <div class="top-actions">
-        <button class="chip ${sandbox ? 'active' : ''}" id="envSwitch">${sandbox ? 'TESTE' : 'OFICIAL'}</button>
         <button class="icon-btn" id="adminBtn" title="ADM">⚙</button>
       </div>
-      ${sandbox ? '<div class="sandbox-strip">AMBIENTE DE TESTES • dados separados do oficial</div>' : ''}
     </header>`;
 }
 
@@ -332,7 +330,7 @@ function catalog() {
 
 function renderPublicCatalog() {
   document.body.classList.add('public-catalog-page');
-  app.innerHTML=`<main class="public-catalog official-catalog"><header class="public-catalog-head official-cover"><img src="./assets/logo-juliane-boone.png" alt="Juliane Boone Nail Designer"><span>GUIA</span><h1>Tabela de Valores</h1><p>CONHEÇA MEUS PROCEDIMENTOS</p></header><section class="official-about"><span class="eyebrow">SOBRE MIM</span><h2>Juliane Boone</h2><p>18 anos exercendo como nail designer, especialista em alongamentos e nail art. Com criatividade e precisão, transforma unhas em verdadeiras obras de arte, garantindo beleza e durabilidade para cada cliente.</p></section><section class="official-formats"><span class="eyebrow">FORMATOS ALONGAMENTO</span><div class="format-visual-grid">${(()=>{const ps=currentData().procedures.filter(p=>p.active&&p.image);const imgs=[ps.find(p=>/alongamento/i.test(p.name))?.image,ps.find(p=>/esmalt/i.test(p.name))?.image,ps.find(p=>/vip|manicure/i.test(p.name))?.image].filter(Boolean);const formats=[['QUADRADO','Laterais retas e ponta bem marcada. Passa modernidade, firmeza e combina com quem gosta de unhas fortes e sofisticadas.'],['AMENDOADO','Laterais levemente afinadas e ponta arredondada. Transmite delicadeza, alonga os dedos e deixa as mãos mais femininas e elegantes.'],['BAILARINA','Laterais retas e ponta levemente afunilada, lembrando uma sapatilha de balé. Sofisticado, moderno e perfeito para unhas longas e impactantes.']];return formats.map((f,i)=>`<article class="format-visual-card">${imgs[i]?`<img src="${escapeHtml(imgs[i])}" alt="Formato ${f[0]}">`:''}<div><b>${f[0]}</b><p>${f[1]}</p></div></article>`).join('')})()}</div></section><h2 class="official-services-title">Escolha os nossos serviços</h2><section class="catalog-showcase">${catalogCards(true)}</section><section class="official-info"><article><h2>Pagamento</h2><p>Dinheiro • Cartão • PIX</p></article><article><h2>Localização</h2><p>Rua Adriano Schondermank, 279<br>Costa e Silva • Joinville - SC</p><p>Segunda-feira a sábado • 8h às 23h</p></article></section><div class="public-actions"><button class="secondary full" id="howToGet">📍 Como chegar</button><button class="secondary full" onclick="window.print()">Salvar / imprimir em PDF</button></div><footer>Juliane Boone • Nail Designer</footer></main>`;
+  app.innerHTML=`<main class="public-catalog official-catalog"><header class="public-catalog-head official-cover"><img src="./assets/logo-juliane-boone.png" alt="Juliane Boone Nail Designer"><span>GUIA</span><h1>Tabela de Valores</h1><p>CONHEÇA MEUS PROCEDIMENTOS</p></header><section class="official-about"><span class="eyebrow">SOBRE MIM</span><h2>Juliane Boone</h2><p>18 anos exercendo como nail designer, especialista em alongamentos e nail art. Com criatividade e precisão, transforma unhas em verdadeiras obras de arte, garantindo beleza e durabilidade para cada cliente.</p><a class="secondary full" href="${STUDIO_INSTAGRAM_URL}" target="_blank" rel="noopener noreferrer" style="display:flex;margin-top:16px;text-decoration:none;align-items:center;justify-content:center">📸 Instagram • @julianeboonenailsjoinville</a></section><section class="official-formats"><span class="eyebrow">FORMATOS ALONGAMENTO</span><div class="format-visual-grid">${(()=>{const ps=currentData().procedures.filter(p=>p.active&&p.image);const imgs=[ps.find(p=>/alongamento/i.test(p.name))?.image,ps.find(p=>/esmalt/i.test(p.name))?.image,ps.find(p=>/vip|manicure/i.test(p.name))?.image].filter(Boolean);const formats=[['QUADRADO','Laterais retas e ponta bem marcada. Passa modernidade, firmeza e combina com quem gosta de unhas fortes e sofisticadas.'],['AMENDOADO','Laterais levemente afinadas e ponta arredondada. Transmite delicadeza, alonga os dedos e deixa as mãos mais femininas e elegantes.'],['BAILARINA','Laterais retas e ponta levemente afunilada, lembrando uma sapatilha de balé. Sofisticado, moderno e perfeito para unhas longas e impactantes.']];return formats.map((f,i)=>`<article class="format-visual-card">${imgs[i]?`<img src="${escapeHtml(imgs[i])}" alt="Formato ${f[0]}">`:''}<div><b>${f[0]}</b><p>${f[1]}</p></div></article>`).join('')})()}</div></section><h2 class="official-services-title">Escolha os nossos serviços</h2><section class="catalog-showcase">${catalogCards(true)}</section><section class="official-info"><article><h2>Pagamento</h2><p>Dinheiro • Cartão • PIX</p></article><article><h2>Localização</h2><p>Rua Adriano Schondermank, 279<br>Costa e Silva • Joinville - SC</p><p>Segunda-feira a sábado • 8h às 23h</p></article></section><div class="public-actions"><button class="secondary full" id="howToGet">📍 Como chegar</button><button class="secondary full" onclick="window.print()">Salvar / imprimir em PDF</button></div><footer>Juliane Boone • Nail Designer</footer></main>`;
   document.querySelectorAll('[data-catalog-procedure]').forEach(btn=>btn.onclick=()=>{
     const p=currentData().procedures.find(x=>x.id===btn.dataset.catalogProcedure);
     const msg=`Olá! 😊 Vi seu catálogo e me interessei por ${p?.name||'um procedimento'} – ${brl(p?.value||0)}. Gostaria de saber sobre disponibilidade. 💅`;
@@ -343,7 +341,7 @@ function renderPublicCatalog() {
 
 function googleCalendarClientId(){return localStorage.getItem(GOOGLE_CLIENT_ID_KEY)||'';}
 function googleCalendarConnected(){return !!googleCalendarAccessToken&&Date.now()<googleCalendarTokenExpiresAt-30000;}
-function googleCalendarAllowed(){return store.environment==='official';}
+function googleCalendarAllowed(){return true;}
 function loadGoogleIdentity(){return new Promise((resolve,reject)=>{if(window.google?.accounts?.oauth2){resolve();return;}const existing=document.querySelector('script[data-jb-google-identity]');if(existing){existing.addEventListener('load',()=>resolve(),{once:true});existing.addEventListener('error',()=>reject(new Error('google_identity')),{once:true});return;}const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;sc.defer=true;sc.dataset.jbGoogleIdentity='1';sc.onload=()=>resolve();sc.onerror=()=>reject(new Error('google_identity'));document.head.appendChild(sc);});}
 async function requestGoogleCalendarAccess(interactive=true){if(!googleCalendarAllowed()){alert('A integração com Google Agenda fica desativada no Sandbox para não misturar testes com a agenda real.');return false;}const clientId=googleCalendarClientId();if(!clientId){openGoogleCalendarSettings();return false;}try{await loadGoogleIdentity();return await new Promise((resolve)=>{googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:clientId,scope:GOOGLE_CALENDAR_SCOPE,callback:(resp)=>{if(resp?.error||!resp?.access_token){googleCalendarAccessToken=null;googleCalendarTokenExpiresAt=0;alert('Não foi possível autorizar o Google Agenda.');resolve(false);return;}googleCalendarAccessToken=resp.access_token;googleCalendarTokenExpiresAt=Date.now()+Number(resp.expires_in||3600)*1000;resolve(true);}});googleTokenClient.requestAccessToken({prompt:interactive?'consent':''});});}catch(e){alert('Não foi possível carregar a conexão com o Google. Verifique a internet e tente novamente.');return false;}}
 function googleCalendarEventBody(a){if(a.type==='personal')return {summary:`🔒 ${a.personalKind||'Particular'}`,description:`Compromisso particular da Agenda Juliane Boone${a.notes?`\n\nObservações: ${a.notes}`:''}\n\nID interno: ${a.id}`,start:{dateTime:new Date(a.start).toISOString(),timeZone:GOOGLE_CALENDAR_TZ},end:{dateTime:new Date(a.end).toISOString(),timeZone:GOOGLE_CALENDAR_TZ}};const c=currentData().clients.find(x=>x.id===a.clientId);return {summary:`💅 ${c?.name||'Cliente'} — ${a.procedureNames?.join(', ')||'Atendimento'}`,location:STUDIO_ADDRESS,description:`Juliane Boone Nail Designer\nCliente: ${c?.name||'Cliente'}${c?.whatsapp?`\nWhatsApp: ${c.whatsapp}`:''}\nProcedimento: ${a.procedureNames?.join(', ')||'Atendimento'}${a.notes?`\nObservações: ${a.notes}`:''}\n\nID interno: ${a.id}`,start:{dateTime:new Date(a.start).toISOString(),timeZone:GOOGLE_CALENDAR_TZ},end:{dateTime:new Date(a.end).toISOString(),timeZone:GOOGLE_CALENDAR_TZ}};}
@@ -360,8 +358,7 @@ function admin() {
   return `<main class="content"><section class="section-card"><div class="section-head"><div><span class="eyebrow">ADM</span><h1>Procedimentos</h1></div></div>
   <p class="muted">Altere valores, tempos, descrição e imagem sem atualizar o código. Mudanças aqui afetam novos agendamentos e o catálogo; históricos anteriores permanecem.</p>
   <div class="procedure-table"><div class="procedure-table-head"><b>Procedimento</b><b>Valor</b><b>Tempo</b><b></b></div>${currentData().procedures.map(p=>`<button class="procedure-grid-row" data-procedure="${p.id}"><strong>${escapeHtml(p.name)}</strong><span>${brl(p.value)}</span><span>${formatDuration(p.durationMin)}</span><span>Editar</span></button>`).join('')}</div>
-  <div class="note-box"><b>Google Agenda</b><br>${store.environment==='sandbox'?'Desativado no Sandbox para proteger a agenda real.':googleCalendarConnected()?'Conectado nesta sessão • sincronização automática ativa.':'Integração disponível para sincronizar atendimentos e compromissos particulares.'}</div><button class="secondary full" id="googleCalendarSettings">📅 Configurar Google Agenda</button>
-  ${store.environment==='sandbox'?'<button class="danger full" id="resetSandbox">Resetar Sandbox</button>':''}
+  <div class="note-box"><b>Google Agenda</b><br>${googleCalendarConnected()?'Conectado nesta sessão • sincronização automática ativa.':'Integração disponível para sincronizar atendimentos e compromissos particulares.'}</div><button class="secondary full" id="googleCalendarSettings">📅 Configurar Google Agenda</button>
   </section></main>`;
 }
 function renderModal() {
@@ -419,10 +416,6 @@ function bind() {
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>goView(b.dataset.view));
   document.querySelector('#adminBtn')?.addEventListener('click',()=>goView('admin'));
   document.querySelector('#topBack')?.addEventListener('click',goBack);
-  document.querySelector('#envSwitch')?.addEventListener('click',()=>{
-    const next = store.environment==='official'?'sandbox':'official';
-    confirmDialog(`Entrar no ambiente ${next==='sandbox'?'de TESTES':'OFICIAL'}?`,()=>{store.switchEnvironment(next);state.modal=null;state.alertReturnModal=null;state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();});
-  });
   document.querySelector('#newAppointment')?.addEventListener('click', openNewRecordChoice);
   document.querySelector('#prevWeek')?.addEventListener('click',()=>{state.selectedWeek=new Date(state.selectedWeek);state.selectedWeek.setDate(state.selectedWeek.getDate()-(state.dashboardPeriod==='month'?30:7));render();});
   document.querySelector('#nextWeek')?.addEventListener('click',()=>{state.selectedWeek=new Date(state.selectedWeek);state.selectedWeek.setDate(state.selectedWeek.getDate()+(state.dashboardPeriod==='month'?30:7));render();});
@@ -462,7 +455,6 @@ function bind() {
   document.querySelectorAll('[data-dashboard-tab]').forEach(b=>b.onclick=()=>{state.dashboardTab=b.dataset.dashboardTab;render();});
   document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{state.dashboardPeriod=b.dataset.period;render();});
   document.querySelector('#shareCatalog')?.addEventListener('click', shareCatalog);document.querySelector('#quickShareCatalog')?.addEventListener('click', shareCatalog);document.querySelector('#quickShareRules')?.addEventListener('click', shareBookingRulesImage);document.querySelector('#previewOfficialCatalog')?.addEventListener('click',()=>{window.open(`${location.pathname}?catalogo=1`,'_blank');});
-  document.querySelector('#resetSandbox')?.addEventListener('click',()=>confirmDialog('Resetar todos os dados do Sandbox?',()=>{store.resetSandbox();state.modal=null;state.alertReturnModal=null;state.calendarSelectionMode=null;state.draftAppointment=null;state.view='dashboard';navigationStack=['dashboard'];render();setTimeout(()=>location.reload(),50);}));
   const closeAlert=()=>{const action=pendingAlertCloseAction;pendingAlertCloseAction=null;if(action){state.alertReturnModal=null;action();return;}state.modal=state.alertReturnModal||null;state.alertReturnModal=null;render();};
   document.querySelector('#appAlertOk')?.addEventListener('click',closeAlert);
   document.querySelectorAll('[data-alert-close]').forEach(b=>b.onclick=closeAlert);
@@ -725,18 +717,18 @@ function openWhatsApp(phone,msg){const d=String(phone||'').replace(/\D/g,'');con
 function reservationText(a,compact=false){const c=currentData().clients.find(x=>x.id===a.clientId),parts=paymentSuggestionParts(a),signal=parts.signal,suggested=parts.carry+signal,after=Math.max(0,Number(a.totalValue||0)-suggested);return `Olá, ${c?.name||''}! 😊
 Seu horário foi reservado para ${dateWithWeekday(a.start)} às ${fmtTime(a.start)}.
 💅 ${a.procedureNames?.join(', ')||'Atendimento'}
-💰 Valor do novo serviço: ${brl(parts.service)}${parts.carry>0?`
-📌 Saldo anterior: ${brl(parts.carry)}`:''}
-🔐 Sinal do novo serviço (30%): ${brl(signal)}${parts.carry>0?`
-💵 Valor sugerido agora (saldo anterior + sinal): ${brl(suggested)}`:''}
-💵 Restante após este pagamento: ${brl(after)}
+💰 ${brl(parts.service)}${parts.carry>0?`
+📌 Saldo pendente anterior: ${brl(parts.carry)}
+💵 Valor da reserva agora: ${brl(suggested)}`:`
+🔐 Sinal (30%): ${brl(signal)}`}
+💵 Restante: ${brl(after)}
 
 PIX — CPF: ${PIX_KEY}
 ${PIX_NAME}
 
-Envie o comprovante aqui para confirmação e controle financeiro.${compact?`\n\nO sinal confirma a reserva e será abatido do valor final.`:''}
+Envie o comprovante aqui para confirmação e controle financeiro.
 
-Importante: a reserva do horário precisa da sua confirmação.`;}
+O sinal confirma a reserva e será abatido do valor final.`;}
 function openReservationActions(id){const a=currentData().appointments.find(x=>x.id===id),c=currentData().clients.find(x=>x.id===a.clientId),parts=paymentSuggestionParts(a),signal=parts.signal,suggested=parts.carry+signal,remaining=Math.max(0,a.totalValue-suggested);state.modal=`<div class="modal-head"><div><span class="eyebrow">RESERVA DE HORÁRIO</span><h2>${escapeHtml(c?.name||'Cliente')}</h2></div><button data-close-modal>×</button></div><div class="payment-summary"><span>Novo serviço</span><b>${brl(parts.service)}</b>${parts.carry>0?`<span>Saldo anterior</span><b>${brl(parts.carry)}</b>`:''}<span>Sinal do novo serviço (30%)</span><b>${brl(signal)}</b>${parts.carry>0?`<span>Sugerido agora</span><b>${brl(suggested)}</b>`:''}<span>Restante</span><b>${brl(remaining)}</b></div><button class="primary full" id="sendFullRules">${messageButtonLabel(a,'reservation_full')} • somente folder</button><button class="secondary full" id="sendSignalOnly">${messageButtonLabel(a,'reservation_signal')} • somente valores</button><button class="secondary full" id="goFinanceReservation">Já recebi • ir ao Financeiro</button><button class="secondary full" id="confirmNoDeposit">Confirmar sem necessidade de sinal</button>`;render();document.querySelector('#sendFullRules').onclick=async()=>{const ok=await shareBookingRulesImage();if(ok)markMessageSent(a,'reservation_full');};document.querySelector('#sendSignalOnly').onclick=()=>{if(openWhatsApp(c?.whatsapp,reservationText(a,true)))markMessageSent(a,'reservation_signal');};document.querySelector('#goFinanceReservation').onclick=()=>registerPayment(a.id);document.querySelector('#confirmNoDeposit').onclick=()=>{confirmDialog('Confirmar este agendamento sem necessidade de sinal?',()=>{a.noDeposit=true;a.status='scheduled';addHistory(a,'confirmed','Agendamento confirmado sem necessidade de sinal');store.save('appointment.confirm.no_deposit',{appointmentId:a.id});openAppointment(a.id);});};}
 async function shareAssetWithText(assetUrl,fileName,mimeType,text){try{const r=await fetch(assetUrl);if(!r.ok)throw new Error('arquivo');const blob=await r.blob();const file=new File([blob],fileName,{type:mimeType||blob.type});if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){const payload={files:[file]};if(text)payload.text=text;await navigator.share(payload);return true;}window.open(assetUrl,'_blank');if(navigator.clipboard)await navigator.clipboard.writeText(text);alert('Arquivo aberto. O texto foi copiado para você colar no WhatsApp.');return true;}catch(e){if(e?.name==='AbortError')return false;alert('Não foi possível preparar o anexo. Tente novamente.');return false;}}
 async function shareRulesAndText(a){const ok=await shareAssetWithText(BOOKING_RULES_IMAGE,'regras-agendamento-juliane-boone.jpg','image/jpeg',reservationText(a,false));if(ok)markMessageSent(a,'reservation_full');}

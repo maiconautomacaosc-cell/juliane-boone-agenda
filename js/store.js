@@ -8,8 +8,9 @@ function deepClone(value) { return JSON.parse(JSON.stringify(value)); }
 
 export class Store {
   constructor() {
-    this.environment = localStorage.getItem(ACTIVE_ENV_KEY) || 'official';
-    this.state = this.load(this.environment);
+    this.environment = 'official';
+    localStorage.setItem(ACTIVE_ENV_KEY, 'official');
+    this.state = this.load('official');
   }
 
   load(env) {
