@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#FAF6F0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -27,6 +27,12 @@
       window.addEventListener('unhandledrejection',function(e){var r=e.reason;show('PROMISE REJEITADA\n'+(r&&r.stack?r.stack:String(r)));});
       setTimeout(function(){var app=document.getElementById('app');if(!shown && (!app || !app.innerHTML.trim()))show('TIMEOUT DE INICIALIZAÇÃO\nO módulo principal não renderizou conteúdo em 6 segundos.\nPossíveis causas: falha ao carregar js/app.js ou alguma dependência importada.');},6000);
     })();
+  </script>
+  <script>
+    // Mantém a interface em escala fixa no iPhone/iPad sem bloquear a rolagem do app.
+    document.addEventListener('gesturestart', function(event){ event.preventDefault(); }, { passive: false });
+    document.addEventListener('gesturechange', function(event){ event.preventDefault(); }, { passive: false });
+    document.addEventListener('gestureend', function(event){ event.preventDefault(); }, { passive: false });
   </script>
   <script type="module" src="./js/app.js?v=0125test"></script>
 </body>
