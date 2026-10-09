@@ -10,7 +10,7 @@
   <title>Juliane Boone • Agenda</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./assets/logo-juliane-boone.png" />
-  <link rel="stylesheet" href="./styles.css?v=0125test" />
+  <link rel="stylesheet" href="./styles.css?v=0149" />
 </head>
 <body>
   <div id="app"></div>
@@ -30,10 +30,19 @@
   </script>
   <script>
     // Mantém a interface em escala fixa no iPhone/iPad sem bloquear a rolagem do app.
-    document.addEventListener('gesturestart', function(event){ event.preventDefault(); }, { passive: false });
-    document.addEventListener('gesturechange', function(event){ event.preventDefault(); }, { passive: false });
-    document.addEventListener('gestureend', function(event){ event.preventDefault(); }, { passive: false });
+    ['gesturestart','gesturechange','gestureend'].forEach(function(type){
+      document.addEventListener(type, function(event){ event.preventDefault(); }, { passive: false });
+    });
+    // Safari iOS também pode iniciar zoom por pinça/toque duplo em áreas de seleção
+    // renderizadas dinamicamente (procedimentos, compromissos e modais).
+    document.addEventListener('touchmove', function(event){
+      if (event.touches && event.touches.length > 1) event.preventDefault();
+    }, { passive: false, capture: true });
+    document.addEventListener('dblclick', function(event){ event.preventDefault(); }, { passive: false });
+    document.addEventListener('wheel', function(event){
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    }, { passive: false });
   </script>
-  <script type="module" src="./js/app.js?v=0125test"></script>
+  <script type="module" src="./js/app.js?v=0149"></script>
 </body>
 </html>
